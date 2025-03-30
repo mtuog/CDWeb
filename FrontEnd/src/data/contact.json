@@ -1,0 +1,20 @@
+{
+  "contacts": [
+    {
+      "emailContact": "vualidon@gmail.com",
+      "contentContact": "fasfafasfafafsa",
+      "id": 1
+    },
+    {
+      "emailContact": "vualiDon@gmail.com",
+      "contentContact": "lfasofasbfkasjfafaffafasf",
+      "id": 2
+    },
+    {
+      "emailContact": "taufhasbhfas@gmail.com",
+      "contentContact": "fasfasfas",
+      "id": 3
+    }
+  ],
+  "nextId": 4
+}
