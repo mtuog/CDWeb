@@ -1,0 +1,6 @@
+/FrontEnd/.idea
+*.xml
+/FrontEnd/node_modules
+/FrontEnd/node_modules
+FrontEnd/node_modules/@babel/helper-create-class-features-plugin/lib/features.js.map
+/FrontEnd/node_modules

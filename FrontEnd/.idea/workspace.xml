@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="2f4724b6-9685-4e70-8a7b-03d3263c6c19" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/.mvn/wrapper/maven-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/target/classes/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/target/classes/com/example/BackEndSpring/BackEndSpringApplication.class" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/target/classes/com/example/BackEndSpring/BackEndSpringApplication.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/target/classes/com/example/BackEndSpring/ServletInitializer.class" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/target/classes/com/example/BackEndSpring/ServletInitializer.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BackEndSpring/target/test-classes/com/example/BackEndSpring/BackEndSpringApplicationTests.class" beforeDir="false" afterPath="$PROJECT_DIR$/../BackEndSpring/target/test-classes/com/example/BackEndSpring/BackEndSpringApplicationTests.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Header/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Header/Header.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Home/Home.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Home/Home.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Login/Login.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Login/Login.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Payment/Payment.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Payment/Payment.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Product/Product.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Product/Product.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ProductDetail/ProductDetail.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ProductDetail/ProductDetail.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Register/Register.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Register/Register.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/SearchResults/SearchResults.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SearchResults/SearchResults.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ShoppingCart/ShoppingCart.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ShoppingCart/ShoppingCart.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/ProductDataFE.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/ProductDataFE.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/contact.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/server.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/users.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/sizeColorHelpers.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/sizeColorHelpers.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="2v5XUafC1VohuTCJKIOJwMd0SuE" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/GitHub/CDWeb/BackEndSpring&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fdfe4dae3a2d-intellij.indexing.shared.core-IU-243.21565.193" />
+        <option value="bundled-js-predefined-d6986cc7102b-e768b9ed790e-JavaScript-IU-243.21565.193" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2f4724b6-9685-4e70-8a7b-03d3263c6c19" name="Changes" comment="" />
+      <created>1743435925863</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1743435925863</updated>
+      <workItem from="1743435927553" duration="1069000" />
+      <workItem from="1743442960915" duration="8000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
