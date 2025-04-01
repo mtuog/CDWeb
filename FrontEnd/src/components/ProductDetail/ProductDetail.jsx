@@ -1,23 +1,96 @@
 // src/components/ProductDetail.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../../store/Actions';
-import { products } from '../../data/ProductDataFE';
 import { findProductSizesById, findProductColorsById } from '../../sizeColorHelpers';
+import { getProductById } from '../../api/productApi';
 
 const ProductDetail = () => {
 	const { id } = useParams();
-	const product = products.find(p => p.id === parseInt(id));
+	const [product, setProduct] = useState(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 	const dispatch = useDispatch();
 	const cart = useSelector(state => state.cart);
 	const [quantity, setQuantity] = useState(1);
 	const [selectedSize, setSelectedSize] = useState('');
 	const [selectedColor, setSelectedColor] = useState('');
+	const [showZoom, setShowZoom] = useState(false);
+	
+	// Fetch product details from API
+	useEffect(() => {
+		const fetchProductDetails = async () => {
+			try {
+				setLoading(true);
+				const data = await getProductById(parseInt(id));
+				setProduct(data);
+				setLoading(false);
+			} catch (error) {
+				setError("Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.");
+				setLoading(false);
+				console.error("Error fetching product details:", error);
+			}
+		};
+
+		fetchProductDetails();
+	}, [id]);
 	
 	// Get available sizes and colors for this product
 	const availableSizes = findProductSizesById(parseInt(id));
 	const availableColors = findProductColorsById(parseInt(id));
+
+	// Toggle zoom image modal and control header visibility
+	const toggleZoom = () => {
+		const newZoomState = !showZoom;
+		setShowZoom(newZoomState);
+		
+		// Get the header element and toggle its visibility
+		const header = document.querySelector('header');
+		if (header) {
+			if (newZoomState) {
+				// Hide header when zoom is shown
+				header.style.display = 'none';
+				// Also lock body scrolling
+				document.body.style.overflow = 'hidden';
+			} else {
+				// Show header when zoom is closed
+				header.style.display = '';
+				// Restore body scrolling
+				document.body.style.overflow = '';
+			}
+		}
+	};
+
+	// Close modal when clicking outside image
+	const handleCloseZoom = (e) => {
+		if (e.target.classList.contains('zoom-modal')) {
+			toggleZoom(); // Use toggleZoom to ensure header visibility is also toggled
+		}
+	};
+
+	// Close modal with ESC key
+	useEffect(() => {
+		const handleEsc = (e) => {
+			if (e.keyCode === 27 && showZoom) {
+				toggleZoom(); // Use toggleZoom to ensure header visibility is also toggled
+			}
+		};
+		window.addEventListener('keydown', handleEsc);
+		
+		// Cleanup function
+		return () => {
+			window.removeEventListener('keydown', handleEsc);
+			// Ensure header is visible when component unmounts if it was hidden
+			if (showZoom) {
+				const header = document.querySelector('header');
+				if (header) {
+					header.style.display = '';
+				}
+				document.body.style.overflow = '';
+			}
+		};
+	}, [showZoom]);
 
 	const handleAddToCart = () => {
 		if (!selectedSize) {
@@ -45,6 +118,21 @@ const ProductDetail = () => {
 		setQuantity(1); // Reset quantity after adding to cart
 	};
 
+	// Show loading state
+	if (loading) {
+		return <div className="container text-center p-t-80 p-b-80">Loading product details...</div>;
+	}
+
+	// Show error state
+	if (error) {
+		return <div className="container text-center p-t-80 p-b-80">{error}</div>;
+	}
+
+	// Show "product not found" state
+	if (!product) {
+		return <div className="container text-center p-t-80 p-b-80">Product not found</div>;
+	}
+
 	return (
 		<div>
 			<section className="sec-product-detail bg0 p-t-65 p-b-60">
@@ -53,8 +141,22 @@ const ProductDetail = () => {
 						<div className="col-md-6 col-lg-7 p-b-30">
 							<div className="p-l-25 p-r-30 p-lr-0-lg">
 								<div className="wrap-pic-w pos-relative">
-									<img src={process.env.PUBLIC_URL + product.img} alt="IMG-PRODUCT" />
-									<a className="flex-c-m size-108 how-pos1 bor0 fs-16 cl10 bg0 hov-btn3 trans-04" href={process.env.PUBLIC_URL + product.img}>
+									<img 
+										src={product.img} 
+										alt={product.name} 
+										style={{ 
+											height: '600px', 
+											width: '100%', 
+											objectFit: 'contain',
+											cursor: 'pointer' 
+										}} 
+										onClick={toggleZoom}
+									/>
+									<a 
+										className="flex-c-m size-108 how-pos1 bor0 fs-16 cl10 bg0 hov-btn3 trans-04" 
+										onClick={toggleZoom}
+										style={{ cursor: 'pointer' }}
+									>
 										<i className="fa fa-expand"></i>
 									</a>
 								</div>
@@ -102,7 +204,7 @@ const ProductDetail = () => {
 										<div className="size-204 respon6-next">
 											<div className="rs1-select2 bor8 bg0">
 												<select 
-													className="form-control"
+													className="form-control" 
 													value={selectedColor} 
 													onChange={(e) => setSelectedColor(e.target.value)}
 												>
@@ -114,20 +216,42 @@ const ProductDetail = () => {
 											</div>
 										</div>
 									</div>
-									
+
+									{/* Quantity */}
 									<div className="flex-w flex-r-m p-b-10">
+										<div className="size-203 flex-c-m respon6">
+											Số lượng
+										</div>
 										<div className="size-204 flex-w flex-m respon6-next">
 											<div className="wrap-num-product flex-w m-r-20 m-tb-10">
-												<div className="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+												<div 
+													className="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m"
+													onClick={() => setQuantity(Math.max(1, quantity - 1))}
+												>
 													<i className="fs-16 zmdi zmdi-minus"></i>
 												</div>
-												<input className="mtext-104 cl3 txt-center num-product" type="number" name="num-product" value={quantity} readOnly />
-												<div className="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m" onClick={() => setQuantity(quantity + 1)}>
+
+												<input 
+													className="mtext-104 cl3 txt-center num-product" 
+													type="number" 
+													name="num-product" 
+													value={quantity}
+													onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+												/>
+
+												<div 
+													className="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m"
+													onClick={() => setQuantity(quantity + 1)}
+												>
 													<i className="fs-16 zmdi zmdi-plus"></i>
 												</div>
 											</div>
-											<button className="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 js-addcart-detail" onClick={handleAddToCart}>
-												Thêm giỏ hàng
+
+											<button 
+												className="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 js-addcart-detail"
+												onClick={handleAddToCart}
+											>
+												Thêm vào giỏ hàng
 											</button>
 										</div>
 									</div>
@@ -159,6 +283,53 @@ const ProductDetail = () => {
 					</div>
 				</div>
 			</section>
+
+			{/* Zoom Image Modal */}
+			{showZoom && (
+				<div 
+					className="zoom-modal" 
+					onClick={handleCloseZoom}
+					style={{
+						position: 'fixed',
+						top: 0,
+						left: 0,
+						width: '100%',
+						height: '100%',
+						backgroundColor: 'rgba(0,0,0,0.9)',
+						zIndex: 1050,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center'
+					}}
+				>
+					<div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
+						<img 
+							src={product.img} 
+							alt={product.name} 
+							style={{
+								maxWidth: '100%',
+								maxHeight: '90vh',
+								objectFit: 'contain'
+							}}
+						/>
+						<button 
+							onClick={toggleZoom} 
+							style={{
+								position: 'absolute',
+								top: '-40px',
+								right: '-40px',
+								background: 'transparent',
+								border: 'none',
+								color: '#fff',
+								fontSize: '30px',
+								cursor: 'pointer'
+							}}
+						>
+							×
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { products }from '../../data/ProductDataFE'; // Sử dụng dữ liệu từ tệp tải lên
 import Pagination from '../Pagination/Pagination';
 import ReactSlider from 'react-slider';
 import './Product.css';
 import './Slider.css';
 import { remove as removeDiacritics } from 'diacritics';
+import { getAllProducts } from '../../api/productApi';
 
 // Function to extract unique categories
 const getCategories = (products) => {
@@ -14,16 +14,38 @@ const getCategories = (products) => {
 };
 
 const Product = () => {
-	const categories = getCategories(products);
+	const [products, setProducts] = useState([]);
+	const [categories, setCategories] = useState(['All Products']);
 	const [sortOrder, setSortOrder] = useState('');
 	const [priceRange, setPriceRange] = useState([0, 10000000]);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [selectedCategory, setSelectedCategory] = useState('All Products');
 	const [searchTerm, setSearchTerm] = useState('');
 	const [isFilterVisible, setIsFilterVisible] = useState(false);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 	const itemsPerPage = 20;
 
 	const navigate = useNavigate();
+
+	// Fetch products from API
+	useEffect(() => {
+		const fetchProducts = async () => {
+			try {
+				setLoading(true);
+				const data = await getAllProducts();
+				setProducts(data);
+				setCategories(getCategories(data));
+				setLoading(false);
+			} catch (error) {
+				setError("Không thể tải sản phẩm. Vui lòng thử lại sau.");
+				setLoading(false);
+				console.error("Error fetching products:", error);
+			}
+		};
+
+		fetchProducts();
+	}, []);
 
 	const handleSort = (order) => {
 		setSortOrder(order);
@@ -102,6 +124,16 @@ const Product = () => {
 
 	// Number of categories to show before grouping into dropdown
 	const visibleCategoryCount = 3;
+
+	// Show loading state
+	if (loading) {
+		return <div className="container text-center p-t-80 p-b-80">Loading products...</div>;
+	}
+
+	// Show error state
+	if (error) {
+		return <div className="container text-center p-t-80 p-b-80">{error}</div>;
+	}
 
 	return (
 		<div className="bg0 m-t-23 p-b-140">
