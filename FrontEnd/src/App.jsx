@@ -20,7 +20,14 @@ import CameraApp from './components/CameraApp/CameraApp';
 import Payment from "./components/Payment/Payment";
 import AdminLayout from './admin/layouts/AdminLayout';
 import Dashboard from './admin/pages/dashboard/Dashboard';
-
+import ProductList from './admin/pages/products/ProductList';
+import ProductForm from './admin/pages/products/ProductForm';
+import OrderList from './admin/pages/orders/OrderList';
+import OrderDetail from './admin/pages/orders/OrderDetail';
+import CategoryList from './admin/pages/categories/CategoryList';
+import CustomerAnalytics from './admin/pages/customers/CustomerAnalytics';
+import StoreSettings from './admin/pages/settings/StoreSettings';
+import PaymentSettings from './admin/pages/settings/PaymentSettings';
 
 const Layout = () => {
     return (
@@ -46,8 +53,11 @@ const router = createBrowserRouter([
             { path: 'home', element: <Home /> },
             { path: 'aboutus', element: <AboutUs /> },
             { path: 'product', element: <Product /> },
+            { path: 'products', element: <Product /> },
             { path: 'product/:id', element: <ProductDetail /> },
             { path: 'shoppingCart', element: <ShoppingCart /> },
+            { path: 'cart', element: <ShoppingCart /> },
+            { path: 'checkout', element: <Payment /> },
             { path: 'contact', element: <Contact /> },
             { path: 'register', element: <Register /> },
             { path: 'login', element: <Login /> },
@@ -56,7 +66,7 @@ const router = createBrowserRouter([
             { path: 'search', element: <SearchResults /> }, 
             { path: 'camera', element: <Camera /> }, 
             { path: 'video', element: <CameraApp /> }, 
-            { path: 'payment', element: <Payment/> },
+            { path: 'payment', element: <Payment /> },
         ],
     },
     {
@@ -65,7 +75,25 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <Dashboard /> },
             { path: 'dashboard', element: <Dashboard /> },
-            // Thêm các routes cho admin khác ở đây
+            
+            // Product Management
+            { path: 'products', element: <ProductList /> },
+            { path: 'products/add', element: <ProductForm /> },
+            { path: 'products/:id/edit', element: <ProductForm /> },
+            
+            // Category Management
+            { path: 'categories', element: <CategoryList /> },
+            
+            // Order Management
+            { path: 'orders', element: <OrderList /> },
+            { path: 'orders/:id', element: <OrderDetail /> },
+            
+            // Customer Analytics
+            { path: 'customers', element: <CustomerAnalytics /> },
+            
+            // Settings
+            { path: 'settings/store', element: <StoreSettings /> },
+            { path: 'settings/payment', element: <PaymentSettings /> },
         ],
     },
 ]);

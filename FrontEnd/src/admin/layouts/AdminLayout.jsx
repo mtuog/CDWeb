@@ -3,6 +3,23 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/common/Sidebar';
 import Header from '../components/common/Header';
 
+// Sidebar links
+const sidebarLinks = [
+  { to: '/admin/dashboard', icon: 'fas fa-tachometer-alt', text: 'Dashboard' },
+  { to: '/admin/products', icon: 'fas fa-box', text: 'Sản phẩm' },
+  { to: '/admin/categories', icon: 'fas fa-tags', text: 'Danh mục' },
+  { to: '/admin/orders', icon: 'fas fa-shopping-cart', text: 'Đơn hàng' },
+  { to: '/admin/customers', icon: 'fas fa-users', text: 'Khách hàng' },
+  { 
+    icon: 'fas fa-cog', 
+    text: 'Cài đặt',
+    submenu: [
+      { to: '/admin/settings/store', text: 'Cửa hàng' },
+      { to: '/admin/settings/payment', text: 'Thanh toán' }
+    ]
+  }
+];
+
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -12,7 +29,7 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-layout">
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} links={sidebarLinks} />
       
       <div className={`admin-main ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <Header toggleSidebar={toggleSidebar} />

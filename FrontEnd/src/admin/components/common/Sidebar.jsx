@@ -1,123 +1,58 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Sidebar = ({ isOpen }) => {
+const Sidebar = ({ isOpen, links = [] }) => {
   const location = useLocation();
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  
-  const menuItems = [
-    {
-      title: 'Dashboard',
-      icon: 'fa fa-tachometer-alt',
-      path: '/admin/dashboard'
-    },
-    {
-      title: 'Sản phẩm',
-      icon: 'fa fa-box',
-      path: '/admin/products',
-      submenu: [
-        { title: 'Danh sách sản phẩm', path: '/admin/products' },
-        { title: 'Thêm sản phẩm', path: '/admin/products/add' },
-        { title: 'Danh mục', path: '/admin/categories' }
-      ]
-    },
-    {
-      title: 'Đơn hàng',
-      icon: 'fa fa-shopping-cart',
-      path: '/admin/orders'
-    },
-    {
-      title: 'Khách hàng',
-      icon: 'fa fa-users',
-      path: '/admin/customers'
-    },
-    {
-      title: 'Thống kê',
-      icon: 'fa fa-chart-bar',
-      path: '/admin/analytics'
-    },
-    {
-      title: 'Cài đặt',
-      icon: 'fa fa-cog',
-      path: '/admin/settings'
-    }
-  ];
-  
-  const toggleDropdown = (index) => {
-    if (activeDropdown === index) {
-      setActiveDropdown(null);
-    } else {
-      setActiveDropdown(index);
-    }
-  };
-  
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-  
-  const isActiveParent = (item) => {
-    if (location.pathname === item.path) {
-      return true;
-    }
-    
-    if (item.submenu) {
-      return item.submenu.some(subItem => location.pathname === subItem.path);
-    }
-    
-    return false;
+  const [expandedMenus, setExpandedMenus] = useState({});
+
+  const toggleSubmenu = (text) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [text]: !prev[text]
+    }));
   };
 
   return (
-    <aside className={`admin-sidebar ${isOpen ? 'open' : 'closed'}`}>
+    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
-        <Link to="/admin/dashboard" className="logo-container">
-          {isOpen ? (
-            <h2 className="logo-text">Admin Panel</h2>
-          ) : (
-            <h2 className="logo-icon">A</h2>
-          )}
-        </Link>
+        <h2>Fashion Admin</h2>
       </div>
       
       <nav className="sidebar-nav">
-        <ul className="menu">
-          {menuItems.map((item, index) => (
-            <li 
-              key={index} 
-              className={`menu-item ${isActiveParent(item) ? 'active' : ''}`}
-            >
-              {item.submenu ? (
+        <ul className="sidebar-menu">
+          {links.map((link, index) => (
+            <li key={index} className={link.submenu ? 'menu-item has-submenu' : 'menu-item'}>
+              {link.submenu ? (
                 <>
-                  <button 
-                    className="menu-button"
-                    onClick={() => toggleDropdown(index)}
+                  <div 
+                    className={`menu-link ${expandedMenus[link.text] ? 'active' : ''}`}
+                    onClick={() => toggleSubmenu(link.text)}
                   >
-                    <i className={item.icon}></i>
-                    {isOpen && <span className="menu-title">{item.title}</span>}
-                    {isOpen && (
-                      <i className={`submenu-arrow fa fa-angle-${activeDropdown === index ? 'down' : 'right'}`}></i>
-                    )}
-                  </button>
+                    <i className={link.icon}></i>
+                    <span>{link.text}</span>
+                    <i className={`submenu-icon fas ${expandedMenus[link.text] ? 'fa-angle-down' : 'fa-angle-right'}`}></i>
+                  </div>
                   
-                  {isOpen && activeDropdown === index && (
-                    <ul className="submenu">
-                      {item.submenu.map((subItem, subIndex) => (
-                        <li 
-                          key={subIndex}
-                          className={`submenu-item ${isActive(subItem.path) ? 'active' : ''}`}
+                  <ul className={`submenu ${expandedMenus[link.text] ? 'open' : ''}`}>
+                    {link.submenu.map((subItem, subIndex) => (
+                      <li key={subIndex} className="submenu-item">
+                        <Link 
+                          to={subItem.to} 
+                          className={`submenu-link ${location.pathname === subItem.to ? 'active' : ''}`}
                         >
-                          <Link to={subItem.path} className="submenu-link">
-                            <span className="submenu-title">{subItem.title}</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                          {subItem.text}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </>
               ) : (
-                <Link to={item.path} className="menu-link">
-                  <i className={item.icon}></i>
-                  {isOpen && <span className="menu-title">{item.title}</span>}
+                <Link 
+                  to={link.to} 
+                  className={`menu-link ${location.pathname === link.to ? 'active' : ''}`}
+                >
+                  <i className={link.icon}></i>
+                  <span>{link.text}</span>
                 </Link>
               )}
             </li>
@@ -126,57 +61,50 @@ const Sidebar = ({ isOpen }) => {
       </nav>
       
       <style jsx>{`
-        .admin-sidebar {
+        .sidebar {
+          background-color: #2c3e50;
+          color: #ecf0f1;
           height: 100vh;
-          background-color: #333;
-          color: #fff;
-          position: fixed;
-          top: 0;
-          left: 0;
           transition: width 0.3s;
           overflow-x: hidden;
-          z-index: 1000;
-        }
-        
-        .open {
+          position: fixed;
+          left: 0;
+          top: 0;
           width: 250px;
+          z-index: 100;
         }
         
-        .closed {
+        .sidebar.closed {
           width: 70px;
         }
         
         .sidebar-header {
-          height: 70px;
+          padding: 20px;
+          border-bottom: 1px solid #34495e;
           display: flex;
           align-items: center;
-          padding: 0 20px;
-          border-bottom: 1px solid #444;
+          justify-content: center;
+          height: 70px;
         }
         
-        .logo-container {
-          text-decoration: none;
-          color: #fff;
-          width: 100%;
-        }
-        
-        .logo-text {
+        .sidebar-header h2 {
           margin: 0;
-          font-size: 20px;
+          font-size: 18px;
+          font-weight: 600;
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
-        .logo-icon {
-          margin: 0;
-          font-size: 24px;
-          text-align: center;
+        .sidebar.closed .sidebar-header h2 {
+          display: none;
         }
         
         .sidebar-nav {
-          padding: 20px 0;
+          padding: 15px 0;
         }
         
-        .menu {
+        .sidebar-menu {
           list-style: none;
           padding: 0;
           margin: 0;
@@ -186,67 +114,119 @@ const Sidebar = ({ isOpen }) => {
           margin-bottom: 5px;
         }
         
-        .menu-item.active > .menu-link,
-        .menu-item.active > .menu-button {
-          background-color: #4a69bd;
-        }
-        
-        .menu-link,
-        .menu-button {
+        .menu-link {
           display: flex;
           align-items: center;
           padding: 12px 20px;
-          color: #fff;
+          color: #ecf0f1;
           text-decoration: none;
-          transition: background-color 0.3s;
-          border: none;
-          background: none;
-          width: 100%;
-          text-align: left;
+          transition: all 0.3s;
           cursor: pointer;
         }
         
-        .menu-link:hover,
-        .menu-button:hover {
-          background-color: #444;
+        .menu-link:hover, .menu-link.active {
+          background-color: #34495e;
         }
         
-        .menu-item i {
-          font-size: 18px;
-          width: 30px;
+        .menu-link i {
+          margin-right: 15px;
+          width: 20px;
           text-align: center;
         }
         
-        .menu-title {
-          margin-left: 10px;
-          white-space: nowrap;
+        .sidebar.closed .menu-link span {
+          display: none;
         }
         
-        .submenu-arrow {
+        .submenu-icon {
           margin-left: auto;
+          font-size: 12px;
+        }
+        
+        .sidebar.closed .submenu-icon {
+          display: none;
         }
         
         .submenu {
           list-style: none;
           padding: 0;
-          margin: 5px 0 5px 30px;
+          margin: 0;
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease-in-out;
+        }
+        
+        .submenu.open {
+          max-height: 200px;
+        }
+        
+        .submenu-item {
+          background-color: #243342;
         }
         
         .submenu-link {
           display: block;
-          padding: 8px 20px;
-          color: #c8c9ca;
+          padding: 10px 20px 10px 55px;
+          color: #ecf0f1;
           text-decoration: none;
           transition: background-color 0.3s;
-          font-size: 14px;
         }
         
-        .submenu-item.active .submenu-link {
-          background-color: #34495e;
+        .submenu-link:hover, .submenu-link.active {
+          background-color: #1a252f;
         }
         
-        .submenu-link:hover {
-          background-color: #34495e;
+        .sidebar.closed .submenu {
+          position: absolute;
+          left: 70px;
+          top: 0;
+          width: 180px;
+          background-color: #2c3e50;
+          z-index: 101;
+          max-height: 0;
+          overflow: hidden;
+        }
+        
+        .sidebar.closed .has-submenu:hover .submenu {
+          max-height: 200px;
+        }
+        
+        .sidebar.closed .submenu-link {
+          padding-left: 20px;
+        }
+        
+        @media (max-width: 768px) {
+          .sidebar {
+            width: 70px;
+          }
+          
+          .sidebar.open {
+            width: 250px;
+          }
+          
+          .sidebar-header h2 {
+            display: none;
+          }
+          
+          .sidebar.open .sidebar-header h2 {
+            display: block;
+          }
+          
+          .menu-link span {
+            display: none;
+          }
+          
+          .sidebar.open .menu-link span {
+            display: inline;
+          }
+          
+          .submenu-icon {
+            display: none;
+          }
+          
+          .sidebar.open .submenu-icon {
+            display: inline;
+          }
         }
       `}</style>
     </aside>
