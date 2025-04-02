@@ -18,6 +18,8 @@ import SearchResults from './components/SearchResults/SearchResults';
 import Camera from './components/Camera/Camera';
 import CameraApp from './components/CameraApp/CameraApp';
 import Payment from "./components/Payment/Payment";
+import AdminLayout from './admin/layouts/AdminLayout';
+import Dashboard from './admin/pages/dashboard/Dashboard';
 
 
 const Layout = () => {
@@ -28,6 +30,11 @@ const Layout = () => {
             <Footer />
         </div>
     );
+}
+
+// Admin không cần header và footer của FrontEnd
+const AdminRoute = () => {
+    return <AdminLayout />;
 }
 
 const router = createBrowserRouter([
@@ -50,6 +57,15 @@ const router = createBrowserRouter([
             { path: 'camera', element: <Camera /> }, 
             { path: 'video', element: <CameraApp /> }, 
             { path: 'payment', element: <Payment/> },
+        ],
+    },
+    {
+        path: '/admin',
+        element: <AdminRoute />,
+        children: [
+            { index: true, element: <Dashboard /> },
+            { path: 'dashboard', element: <Dashboard /> },
+            // Thêm các routes cho admin khác ở đây
         ],
     },
 ]);
