@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider, Route, Outlet } from 'react-router-dom';
 import { Provider } from 'react-redux';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import store from './store/Store';
 import Footer from './components/Footer/Footer';
 import Header from './components/Header/Header';
@@ -18,6 +19,8 @@ import SearchResults from './components/SearchResults/SearchResults';
 import Camera from './components/Camera/Camera';
 import CameraApp from './components/CameraApp/CameraApp';
 import Payment from "./components/Payment/Payment";
+import VerifyRegisterAccount from './components/VerifyRegisterAccount/VerifyRegisterAccount';
+import ForgotPassword from './components/ForgotPassword/ForgotPassword';
 import AdminLayout from './admin/layouts/AdminLayout';
 import Dashboard from './admin/pages/dashboard/Dashboard';
 import ProductList from './admin/pages/products/ProductList';
@@ -67,6 +70,8 @@ const router = createBrowserRouter([
             { path: 'camera', element: <Camera /> }, 
             { path: 'video', element: <CameraApp /> }, 
             { path: 'payment', element: <Payment /> },
+            { path: 'verify-account', element: <VerifyRegisterAccount /> },
+            { path: 'forgot-password', element: <ForgotPassword /> },
         ],
     },
     {
@@ -101,9 +106,11 @@ const router = createBrowserRouter([
 function App() {
     return (
         <Provider store={store}>
-            <div className="App">
-                <RouterProvider router={router} />
-            </div>
+            <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+                <div className="App">
+                    <RouterProvider router={router} />
+                </div>
+            </GoogleOAuthProvider>
         </Provider>
     );
 }

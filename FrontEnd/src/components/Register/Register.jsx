@@ -1,175 +1,186 @@
-import React, { useState } from 'react';
-const Register = () => {
-  const [username, setUsername] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [dob, setDob] = useState(''); 
-  const [gender, setGender] = useState(''); 
-  const [address, setAddress] = useState(''); 
-  const [message, setMessage] = useState('');
-  const validatePhoneNumber = (phoneNumber) => {
-    const re = /^\d{10,11}$/; 
-    return re.test(String(phoneNumber));
-};
-const validatePassword = (password) => {
-  const re = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
-  return re.test(password);
-};    
-  const handleSubmit = (e) => {
-    e.preventDefault();
-  if (!validatePhoneNumber(phoneNumber)) {
-      setMessage('Số điện thoại không hợp lệ');
-      return;
-  }
-  if (!validatePassword(password)) {
-    setMessage('Mật khẩu phải dài 8-20 ký tự, bao gồm ít nhất một chữ hoa, một chữ thường, một số và một ký tự đặc biệt.');
-    return;
-}
+import React, {createContext, useState, useContext } from 'react';
+import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
+import { useNavigate, Link } from 'react-router-dom';
+import '../css/login.css';
+import '../css/Loading.css';
+import { BACKEND_URL_HTTP, BACKEND_URL_HTTPS } from '../config.js';
+import imgHolder from '../img/login-holder.jpg';
+import Swal from 'sweetalert2';
+import axios from 'axios';
 
+function Register() {
+    const navigate = useNavigate();
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isEmailFocused, setIsEmailFocused] = useState(false);
+    const [isUsernameFocused, setIsUsernameFocused] = useState(false);
+    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const newUser = {
-      username,
-      email,
-      password,
-      dob,
-      gender,
-      address,
-      phoneNumber,
-    };
+    const AuthContext = createContext();
 
-    setMessage('Đăng ký thành công');
-    fetch('/save-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newUser),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Success:', data);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-    setUsername('');
-    setEmail('');
-    setPassword('');
-  };
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    const validateUserName = (username) => {
+        if (username.length >= 3) {
+            return true;  
+          } else {
+            return false; 
+          }
+    }
+
+    const registerHandler = async (e) => {
+        e.preventDefault();
+        let timerInterval;
+        if (username.length === 0 || password.length === 0 || email.length ===0) {
+            Swal.fire({
+                title: 'Please fill in the registration information !',
+                icon: 'warning',
+                confirmButtonColor: "#3085d6",
+            });
+            return;
+        }
+        if (!validateEmail(email)) {
+            Swal.fire({
+                title: 'The email is not in the correct format!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+            })
+        }
+        if(!validateUserName(username)){
+            Swal.fire({
+                title: 'Usernames must be at least 3 characters !',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+            })
+        }
+
+        setIsLoading(true); // Bắt đầu hiển thị loading spinner
+
+            try {
+                const response = await axios.post(`http://${BACKEND_URL_HTTP}/api/UserServices/register`, {
+                    userName: username,
+                    email: email,
+                    password: password
+                });
+                 console.log(response);
+    
+                setIsLoading(false); // Ẩn loading spinner
+    
+                if (response.status === 200 && response.data.message === "Đăng ký tài khoản thành công ! Vui lòng xác minh tài khoản") {
+                    Swal.fire({
+                        title: 'Registration Successful!',
+                        text: 'Please check your email to verify your account.',
+                        icon: 'success',
+                        confirmButtonColor: "#3085d6",
+                    }).then(() => {
+                        localStorage.setItem('email', email);
+                        navigate('/verify-register');
+                    });
+                }
+                if (response.status === 200 && response.data.message === "Email này đã được sử dụng") {
+                    Swal.fire({
+                        title: 'Registration failed !',
+                        text: 'This account has been registered. Please use a different account.',
+
+                        icon: 'error',
+                        confirmButtonColor: "#3085d6",
+                    })
+                }
+               
+                
+            } catch (error) {
+                setIsLoading(false); // Ẩn loading spinner
+
+                Swal.fire({
+                    title: 'Registration failed !',
+                    text: error.response?.data?.message || 'An error occurred. Please try again!',
+                    icon: 'error',
+                    confirmButtonColor: "#3085d6",
+                });
+            }
+        
+    }
     return (
-        <div>
-       <div className="container1">
-          	<div className="wrapper1">
-			<div className="image-holder1">
-				<img src="assets/images/registration-form-8.jpg" alt=""/>
-			</div>
-			<div className="form-inner1">
-				<form onSubmit={handleSubmit}>
-					<div className="form-header1">
-						<h3>Đăng Ký</h3>
-						<img src="assets/images/sign-up.png" alt="" className="sign-up-icon"/>
-            
-					</div>
-          <h4 className="text-center"> {message} </h4>
-
-					<div className="form-group1">
-						<label for="">Họ Và Tên:</label>
-						<input type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required className="form-control1" data-validation="length alphanumeric" data-validation-length="3-12"/>
-					</div>
-					<div className="form-group1">
-						<label for="">E-mail:</label>
-						<input  type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required className="form-control1" data-validation="email"/>
-					</div>
-          <div className="form-group1">
-                                <label htmlFor="">Số Điện Thoại:</label>
-                                <input
-                                    type="tel"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    required
-                                    className="form-control1"
-                                    pattern="^\d{10,11}$"
-                                    title="Số điện thoại phải dài 10-11 chữ số."
-                                />
+        <div className="background-image">
+            <div className='overlay'>
+                <div className='main-container content'>
+                    {isLoading && (
+                        <div className="loading-spinner">
+                            <div className="spinner"></div>
+                            <div className="loading-text">Đang xử lý...</div>
+                        </div>
+                    )}
+                    <div className='img-container'>
+                        <img src={imgHolder} alt='Login img holder'></img>
+                    </div>
+                    <div className="login-container">
+                        <h2>Đăng ký tài khoản</h2>
+                        <form onSubmit={registerHandler}>
+                            <div className="form-inputs">
+                                <div className={`form-group ${isUsernameFocused ? 'focused' : ''}`}>
+                                    <label>
+                                        <FaUser/>
+                                    </label>
+                                    <input
+                                        type='text'
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        onFocus={() => setIsUsernameFocused(true)}
+                                        onBlur={() => setIsUsernameFocused(false)}
+                                        placeholder='Tên người dùng'
+                                    />
+                                </div>
+                                <div className={`form-group ${isEmailFocused ? 'focused' : ''}`}>
+                                    <label>
+                                        <FaEnvelope/>
+                                    </label>
+                                    <input
+                                        type='text'
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        onFocus={() => setIsEmailFocused(true)}
+                                        onBlur={() => setIsEmailFocused(false)}
+                                        placeholder='Email'
+                                    />
+                                </div>
+                                <div className={`form-group ${isPasswordFocused ? 'focused' : ''}`}>
+                                    <label>
+                                        <FaLock/>
+                                    </label>
+                                    <input
+                                        type='password'
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onFocus={() => setIsPasswordFocused(true)}
+                                        onBlur={() => setIsPasswordFocused(false)}
+                                        placeholder='Mật khẩu'
+                                    />
+                                </div>
+                                
+                                <button className='login-btn' type='submit' disabled={isLoading}>
+                                    ĐĂNG KÝ
+                                </button>
                             </div>
-                            <div className="form-group1">
-                                <label htmlFor="">Mật Khẩu:</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="form-control1"
-                                    data-validation="length"
-                                    data-validation-length="min8"
-                                />
-                                <span className="form-text small text-dark">
-                                Mật khẩu phải dài 8-20 ký tự, bao gồm ít nhất một chữ hoa, một chữ thường, một số và một ký tự đặc biệt.                                </span>
+                            
+                            <div className="social-section">
+                                <div className='break-line'>hoặc</div>
+                                
+                                <p className='register-here'>Đã có tài khoản? <Link to="/login">Đăng nhập ngay</Link></p>
                             </div>
-          <div className="form-group1">
-            <label>Ngày Sinh:</label>
-            <input
-              type="date"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              required
-              className="form-control1"
-            />
-          </div>
-          <div className="form-group1">
-            <label>Giới Tính:</label>
-            <select
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              required
-              className="form-control1"
-            >
-              <option className='p' value="">Chọn giới tính</option>
-              <option className='p'  value="1">Nam</option>
-              <option className='p'  value="2">Nữ</option>
-              <option className='p'  value="3">Giới Tính Khác</option>
-            </select>
-            <div className="form-group1">
-            <label>Địa Chỉ:</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              className="form-control1"
-            />
-          </div>
-					</div>
-					<button className="button1" type="submit">Tạo Tài Khoản Mới</button>
-					<div className="socials">
-						<p>Đăng ký với các nền tảng xã hội</p>
-						<a href="" className="socials-icon">
-							<i className="zmdi zmdi-facebook"></i>
-						</a>
-						<a href="" className="socials-icon">
-							<i className="zmdi zmdi-instagram"></i>
-						</a>
-						<a href="" className="socials-icon">
-							<i className="zmdi zmdi-twitter"></i>
-						</a>
-						<a href="" className="socials-icon">
-							<i className="zmdi zmdi-tumblr"></i>
-						</a>
-					</div>
-				</form>
-			</div>
-			
-		</div>
-    </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     );
-};
-
+    
+}
 export default Register;
