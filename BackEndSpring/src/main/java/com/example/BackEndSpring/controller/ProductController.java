@@ -1,6 +1,8 @@
 package com.example.BackEndSpring.controller;
 
+import com.example.BackEndSpring.model.Category;
 import com.example.BackEndSpring.model.Product;
+import com.example.BackEndSpring.service.CategoryService;
 import com.example.BackEndSpring.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,10 +17,12 @@ import java.util.Optional;
 public class ProductController {
 
     private final ProductService productService;
+    private final CategoryService categoryService;
 
     @Autowired
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, CategoryService categoryService) {
         this.productService = productService;
+        this.categoryService = categoryService;
     }
 
     @GetMapping
@@ -60,26 +64,57 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        // Xử lý trường hợp product có category dạng string hoặc id
+        if (product.getCategory() != null && product.getCategory().getId() == null && product.getCategory().getName() != null) {
+            // Tìm category theo tên
+            Category category = categoryService.getCategoryByName(product.getCategory().getName());
+            // Nếu category không tồn tại, tạo mới
+            if (category == null) {
+                Category newCategory = new Category();
+                newCategory.setName(product.getCategory().getName());
+                category = categoryService.saveCategory(newCategory);
+            }
+            product.setCategory(category);
+        }
+        
         Product savedProduct = productService.saveProduct(product);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
+        return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        if (!productService.getProductById(id).isPresent()) {
+        Optional<Product> existingProduct = productService.getProductById(id);
+        if (existingProduct.isPresent()) {
+            product.setId(id);
+            
+            // Xử lý trường hợp product có category dạng string hoặc id
+            if (product.getCategory() != null && product.getCategory().getId() == null && product.getCategory().getName() != null) {
+                // Tìm category theo tên
+                Category category = categoryService.getCategoryByName(product.getCategory().getName());
+                // Nếu category không tồn tại, tạo mới
+                if (category == null) {
+                    Category newCategory = new Category();
+                    newCategory.setName(product.getCategory().getName());
+                    category = categoryService.saveCategory(newCategory);
+                }
+                product.setCategory(category);
+            }
+            
+            Product updatedProduct = productService.saveProduct(product);
+            return ResponseEntity.ok(updatedProduct);
+        } else {
             return ResponseEntity.notFound().build();
         }
-        product.setId(id);
-        Product updatedProduct = productService.saveProduct(product);
-        return ResponseEntity.ok(updatedProduct);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        if (!productService.getProductById(id).isPresent()) {
+        Optional<Product> existingProduct = productService.getProductById(id);
+        if (existingProduct.isPresent()) {
+            productService.deleteProduct(id);
+            return ResponseEntity.noContent().build();
+        } else {
             return ResponseEntity.notFound().build();
         }
-        productService.deleteProduct(id);
-        return ResponseEntity.noContent().build();
     }
 } 

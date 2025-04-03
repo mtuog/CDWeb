@@ -9,7 +9,7 @@ import { getAllProducts } from '../../api/productApi';
 
 // Function to extract unique categories
 const getCategories = (products) => {
-	const categories = products.map(product => product.category);
+	const categories = products.map(product => product.category?.name || 'Uncategorized');
 	return ['All Products', ...new Set(categories)];
 };
 
@@ -98,7 +98,7 @@ const Product = () => {
 		const [min, max] = priceRange;
 		if (product.price < min || product.price > max) return false;
 
-		if (selectedCategory !== 'All Products' && product.category !== selectedCategory) {
+		if (selectedCategory !== 'All Products' && product.category?.name !== selectedCategory) {
 			return false;
 		}
 
@@ -247,7 +247,7 @@ const Product = () => {
 				{/* Product Grid */}
 				<div className="row isotope-grid">
 					{currentProducts.map((product) => (
-						<div key={product.id} className={`col-sm-6 col-md-4 col-lg-3 p-b-35 isotope-item ${product.category.toLowerCase().replace(/ /g, '-')}`}>
+						<div key={product.id} className={`col-sm-6 col-md-4 col-lg-3 p-b-35 isotope-item ${product.category?.name.toLowerCase().replace(/ /g, '-')}`}>
 							<div className="block2">
 								<div className="block2-pic hov-img0">
 									<img src={product.img} alt={product.name} />

@@ -141,7 +141,7 @@ function Login() {
                 }).then((result) => {
                     if (result.isConfirmed) {
                         localStorage.setItem('email', email);
-                        navigate('/verify-register');
+                        navigate('/verify-account');
                     }
                 });
             } else {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProductById } from '../../../api/productApi';
+import { getAllCategories } from '../../../api/categoryApi';
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -9,7 +10,7 @@ const ProductForm = () => {
   
   const [formData, setFormData] = useState({
     name: '',
-    category: '',
+    category: null,
     price: '',
     des: '',
     inStock: true,
@@ -21,13 +22,34 @@ const ProductForm = () => {
   const [loading, setLoading] = useState(isEditMode);
   const [error, setError] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-  
-  // Mock categories - trong thực tế sẽ lấy từ API
-  const categories = ['Áo nam', 'Áo nữ', 'Quần nam', 'Quần nữ', 'Váy', 'Giày'];
+  const [categories, setCategories] = useState([]);
   
   // Mock sizes and colors for the form
   const availableSizes = ['S', 'M', 'L', 'XL', 'XXL'];
   const availableColors = ['Đen', 'Trắng', 'Đỏ', 'Xanh', 'Vàng', 'Hồng', 'Xám'];
+  
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await getAllCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        // Default mock categories in case API fails
+        setCategories([
+          { id: 1, name: 'Áo nam' },
+          { id: 2, name: 'Áo nữ' },
+          { id: 3, name: 'Quần nam' },
+          { id: 4, name: 'Quần nữ' },
+          { id: 5, name: 'Váy' },
+          { id: 6, name: 'Giày' }
+        ]);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
   
   useEffect(() => {
     if (isEditMode) {
@@ -39,7 +61,7 @@ const ProductForm = () => {
           // Transform the data to match the form format
           setFormData({
             name: data.name || '',
-            category: data.category || '',
+            category: data.category || null,
             price: data.price || '',
             des: data.des || '',
             inStock: data.inStock !== undefined ? data.inStock : true,
@@ -75,6 +97,14 @@ const ProductForm = () => {
       // Only allow numbers
       const numericValue = value.replace(/[^0-9]/g, '');
       setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else if (name === 'category') {
+      // Handle category selection
+      if (value === '') {
+        setFormData(prev => ({ ...prev, category: null }));
+      } else {
+        const selectedCategory = categories.find(cat => cat.id === parseInt(value));
+        setFormData(prev => ({ ...prev, category: selectedCategory }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -180,13 +210,13 @@ const ProductForm = () => {
               <select
                 id="category"
                 name="category"
-                value={formData.category}
+                value={formData.category?.id || ''}
                 onChange={handleChange}
                 required
               >
                 <option value="">Chọn danh mục</option>
-                {categories.map((category, index) => (
-                  <option key={index} value={category}>{category}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
                 ))}
               </select>
             </div>

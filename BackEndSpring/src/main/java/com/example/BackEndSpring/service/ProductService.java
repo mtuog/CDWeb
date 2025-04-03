@@ -1,5 +1,6 @@
 package com.example.BackEndSpring.service;
 
+import com.example.BackEndSpring.model.Category;
 import com.example.BackEndSpring.model.Product;
 import com.example.BackEndSpring.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +13,12 @@ import java.util.Optional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryService categoryService;
 
     @Autowired
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, CategoryService categoryService) {
         this.productRepository = productRepository;
+        this.categoryService = categoryService;
     }
 
     public List<Product> getAllProducts() {
@@ -26,7 +29,8 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    public List<Product> getProductsByCategory(String category) {
+    public List<Product> getProductsByCategory(String categoryName) {
+        Category category = categoryService.getCategoryByName(categoryName);
         return productRepository.findByCategory(category);
     }
 

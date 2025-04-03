@@ -175,6 +175,20 @@ const ProductDetail = () => {
 									{product.des}
 								</p>
 								<div className="p-t-33">
+									{/* Category */}
+									<div className="flex-w flex-r-m p-b-10">
+										<div className="size-203 flex-c-m respon6">
+											Danh mục
+										</div>
+										<div className="size-204 respon6-next">
+											<div className="rs1-select2 bor8 bg0">
+												<div className="category-display">
+													{typeof product.category === 'object' ? product.category.name : product.category || 'Uncategorized'}
+												</div>
+											</div>
+										</div>
+									</div>
+
 									{/* Size Selection */}
 									<div className="flex-w flex-r-m p-b-10">
 										<div className="size-203 flex-c-m respon6">
@@ -278,7 +292,7 @@ const ProductDetail = () => {
 
 					<div className="bg6 flex-c-m flex-w size-302 m-t-73 p-tb-15">
                         <span className="stext-107 cl6 p-lr-25">
-                            Categories: {product.category}
+                            Categories: {typeof product.category === 'object' ? product.category.name : product.category || 'Uncategorized'}
                         </span>
 					</div>
 				</div>

@@ -82,7 +82,7 @@ function Register() {
                         confirmButtonColor: "#3085d6",
                     }).then(() => {
                         localStorage.setItem('email', email);
-                        navigate('/verify-register');
+                        navigate('/verify-account');
                     });
                 }
                 if (response.status === 200 && response.data.message === "Email này đã được sử dụng") {

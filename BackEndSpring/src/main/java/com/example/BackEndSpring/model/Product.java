@@ -3,6 +3,8 @@ package com.example.BackEndSpring.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -21,14 +23,17 @@ public class Product {
     private boolean newProduct;
     private boolean favorite;
     private double price;
-    private String category;
+    
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
     
     // Constructors
     public Product() {
     }
     
     public Product(Long id, String name, String img, String des, boolean bestSeller, 
-                  boolean newProduct, boolean favorite, double price, String category) {
+                  boolean newProduct, boolean favorite, double price, Category category) {
         this.id = id;
         this.name = name;
         this.img = img;
@@ -105,11 +110,11 @@ public class Product {
         this.price = price;
     }
     
-    public String getCategory() {
+    public Category getCategory() {
         return category;
     }
     
-    public void setCategory(String category) {
+    public void setCategory(Category category) {
         this.category = category;
     }
 } 

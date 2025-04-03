@@ -21,6 +21,7 @@ import CameraApp from './components/CameraApp/CameraApp';
 import Payment from "./components/Payment/Payment";
 import VerifyRegisterAccount from './components/VerifyRegisterAccount/VerifyRegisterAccount';
 import ForgotPassword from './components/ForgotPassword/ForgotPassword';
+import ResetPassword from './components/ResetPassword/ResetPassword';
 import AdminLayout from './admin/layouts/AdminLayout';
 import Dashboard from './admin/pages/dashboard/Dashboard';
 import ProductList from './admin/pages/products/ProductList';
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
             { path: 'payment', element: <Payment /> },
             { path: 'verify-account', element: <VerifyRegisterAccount /> },
             { path: 'forgot-password', element: <ForgotPassword /> },
+            { path: 'reset-password', element: <ResetPassword /> },
         ],
     },
     {

@@ -8,30 +8,45 @@ const Header = () => {
 	const [username, setUsername] = useState('');
 	const [id, setId] = useState('');
 	const [searchTerm, setSearchTerm] = useState('');
+	const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 	const cart = useSelector(state => state.cart);
 
 	useEffect(() => {
-		fetch('/session')
-			.then((response) => response.json())
-			.then((data) => {
-				if (data.loggedIn) {
-					setLoggedIn(true);
-					setUsername(data.username);
-					setId(data.userId);
-				}
-			});
+		// Thay thế fetch('/session') bằng kiểm tra localStorage
+		const token = localStorage.getItem('token');
+		const userName = localStorage.getItem('userName');
+		const userId = localStorage.getItem('userId');
+		
+		if (token && userName) {
+			setLoggedIn(true);
+			setUsername(userName);
+			setId(userId);
+		}
 	}, []);
 
-	const handleLogout = async () => {
-		const response = await fetch('/logout', { method: 'POST' });
-		const data = await response.json();
-		if (data.message === 'Logout successful') {
-			setLoggedIn(false);
-			setUsername('');
-		}
+	const handleLogout = () => {
+		// Xóa dữ liệu người dùng khỏi localStorage
+		localStorage.removeItem('token');
+		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('userId');
+		localStorage.removeItem('userName');
+		localStorage.removeItem('userRole');
+		
+		// Cập nhật state
+		setLoggedIn(false);
+		setUsername('');
+		setId('');
+		setUserDropdownOpen(false);
+		
+		// Chuyển hướng về trang chủ
+		navigate('/');
+	};
+
+	const toggleUserDropdown = () => {
+		setUserDropdownOpen(!userDropdownOpen);
 	};
 
 	const handleClearCart = () => {
@@ -91,15 +106,15 @@ const Header = () => {
 								<li className="label1" data-label1="hot"><a href="/shoppingCart">Giỏ hàng</a></li>
 								<li><a href="/aboutUs">Giới Thiệu</a></li>
 								<li><a href="/contact">Liên Hệ</a></li>
-								<div class="dropdown">
-    <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
-      Tính năng đặc biệt
-    </button>
-    <div class="dropdown-menu">
-      <a class="dropdown-item" href="/camera">Chụp Hình</a>
-      <a class="dropdown-item" href="video">Quay Phim</a>
-    </div>
-  </div>
+								<div className="dropdown">
+									<button type="button" className="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+										Tính năng đặc biệt
+									</button>
+									<div className="dropdown-menu">
+										<a className="dropdown-item" href="/camera">Chụp Hình</a>
+										<a className="dropdown-item" href="video">Quay Phim</a>
+									</div>
+								</div>
 							</ul>
 						</div>
 						<div className="wrap-icon-header flex-w flex-r-m">
@@ -122,6 +137,91 @@ const Header = () => {
 									aria-label="Search products"
 								/>
 							</div>
+							<div className="user-dropdown-container" style={{ position: 'relative', marginLeft: '15px' }}>
+								<div 
+									className="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11" 
+									onClick={toggleUserDropdown}
+									style={{ cursor: 'pointer' }}
+								>
+									<i className="zmdi zmdi-account"></i>
+								</div>
+								{userDropdownOpen && (
+									<div className="user-dropdown-menu" style={{
+										position: 'absolute',
+										top: '40px',
+										right: '0',
+										backgroundColor: 'white',
+										boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+										borderRadius: '5px',
+										padding: '5px 0',
+										zIndex: 1000,
+										minWidth: '150px'
+									}}>
+										{loggedIn ? (
+											<>
+												<a 
+													href={`/profile/${id}`} 
+													style={{
+														display: 'block',
+														padding: '8px 15px',
+														color: '#333',
+														textDecoration: 'none',
+														fontSize: '14px'
+													}}
+													onClick={() => setUserDropdownOpen(false)}
+												>
+													<i className="zmdi zmdi-account mr-2"></i> Hồ sơ
+												</a>
+												<a 
+													href="#" 
+													style={{
+														display: 'block',
+														padding: '8px 15px',
+														color: '#333',
+														textDecoration: 'none',
+														fontSize: '14px'
+													}}
+													onClick={(e) => {
+														e.preventDefault();
+														handleLogout();
+													}}
+												>
+													<i className="zmdi zmdi-power mr-2"></i> Đăng xuất
+												</a>
+											</>
+										) : (
+											<>
+												<a 
+													href="/login" 
+													style={{
+														display: 'block',
+														padding: '8px 15px',
+														color: '#333',
+														textDecoration: 'none',
+														fontSize: '14px'
+													}}
+													onClick={() => setUserDropdownOpen(false)}
+												>
+													<i className="zmdi zmdi-account-circle mr-2"></i> Đăng nhập
+												</a>
+												<a 
+													href="/register" 
+													style={{
+														display: 'block',
+														padding: '8px 15px',
+														color: '#333',
+														textDecoration: 'none',
+														fontSize: '14px'
+													}}
+													onClick={() => setUserDropdownOpen(false)}
+												>
+													<i className="zmdi zmdi-account-add mr-2"></i> Đăng ký
+												</a>
+											</>
+										)}
+									</div>
+								)}
+							</div>
 						</div>
 					</nav>
 				</div>
@@ -140,6 +240,12 @@ const Header = () => {
 					<a href="#" className="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti" data-notify="0">
 						<i className="zmdi zmdi-favorite-outline"></i>
 					</a>
+					<div 
+						className="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11" 
+						onClick={toggleUserDropdown}
+					>
+						<i className="zmdi zmdi-account"></i>
+					</div>
 				</div>
 				<button className="btn-show-menu-mobile hamburger hamburger--squeeze" aria-label="Menu">
                     <span className="hamburger-box">
@@ -171,12 +277,37 @@ const Header = () => {
 					Cửa hàng</a></li>
 					<li><a href="/shoppingCart" className="label1 rs1" data-label1="hot">Giỏ hàng</a></li>
 					<li><a href="/aboutUs">Giới Thiệu</a></li>
-					<li><a href="/contact">
-Liên Hệ
-</a></li>
-
+					<li><a href="/contact">Liên Hệ</a></li>
+					{userDropdownOpen && (
+						<>
+							{loggedIn ? (
+								<>
+									<li><a href={`/profile/${id}`}>Hồ sơ</a></li>
+									<li><a href="#" onClick={(e) => {e.preventDefault(); handleLogout();}}>Đăng xuất</a></li>
+								</>
+							) : (
+								<>
+									<li><a href="/login">Đăng nhập</a></li>
+									<li><a href="/register">Đăng ký</a></li>
+								</>
+							)}
+						</>
+					)}
 				</ul>
 			</div>
+			{userDropdownOpen && (
+				<div 
+					style={{
+						position: 'fixed',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						zIndex: 99
+					}}
+					onClick={toggleUserDropdown}
+				/>
+			)}
 		</header>
 	);
 };

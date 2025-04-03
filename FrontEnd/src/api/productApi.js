@@ -25,12 +25,23 @@ export const getProductById = async (id) => {
 };
 
 // Hàm lấy sản phẩm theo danh mục
-export const getProductsByCategory = async (category) => {
+export const getProductsByCategory = async (categoryName) => {
   try {
-    const response = await axios.get(`${API_URL}/products/category/${category}`);
+    const response = await axios.get(`${API_URL}/products/category/${categoryName}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching products in category ${category}:`, error);
+    console.error(`Error fetching products in category ${categoryName}:`, error);
+    throw error;
+  }
+};
+
+// Hàm lấy sản phẩm theo ID danh mục
+export const getProductsByCategoryId = async (categoryId) => {
+  try {
+    const response = await axios.get(`${API_URL}/products/category-id/${categoryId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching products with category ID ${categoryId}:`, error);
     throw error;
   }
 };
@@ -64,6 +75,38 @@ export const getFavoriteProducts = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching favorite products:', error);
+    throw error;
+  }
+};
+
+// Hàm tạo sản phẩm mới
+export const createProduct = async (productData) => {
+  try {
+    const response = await axios.post(`${API_URL}/products`, productData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating product:', error);
+    throw error;
+  }
+};
+
+// Hàm cập nhật sản phẩm
+export const updateProduct = async (id, productData) => {
+  try {
+    const response = await axios.put(`${API_URL}/products/${id}`, productData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating product with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+// Hàm xóa sản phẩm
+export const deleteProduct = async (id) => {
+  try {
+    await axios.delete(`${API_URL}/products/${id}`);
+  } catch (error) {
+    console.error(`Error deleting product with ID ${id}:`, error);
     throw error;
   }
 }; 

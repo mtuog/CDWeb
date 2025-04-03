@@ -1,13 +1,15 @@
 @font-face {
   font-family: "ChelseaMarket-Regular";
-  src: url("../fonts/chelsea_market/ChelseaMarket-Regular.ttf"); }
+  src: url('https://fonts.googleapis.com/css2?family=Chelsea+Market&display=swap') format('woff2');
+}
 @font-face {
   font-family: "Muli-Regular";
-  src: url("../fonts/muli/Muli-Regular.ttf"); }
-  @font-face {
-    font-family: 'Muli-SemiBold';
-    src: url('/assets/fonts/muli/Muli-SemiBold.ttf') format('truetype');
-  }
+  src: url('https://fonts.googleapis.com/css2?family=Muli&display=swap') format('woff2');
+}
+@font-face {
+  font-family: 'Muli-SemiBold';
+  src: url('https://fonts.googleapis.com/css2?family=Muli:wght@600&display=swap') format('woff2');
+}
 * {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;

@@ -27,26 +27,10 @@ public class ProductStructureController {
         structure.put("newProduct", "boolean");
         structure.put("favorite", "boolean");
         structure.put("price", "double");
-        structure.put("category", "String");
+        structure.put("category", "Category (id: Long, name: String)");
         
         return ResponseEntity.ok(structure);
     }
     
-    @GetMapping("/product-sample")
-    public ResponseEntity<Product> getProductSample() {
-        // Tạo một mẫu sản phẩm với đầy đủ các trường theo thứ tự
-        Product sample = new Product(
-            1L,
-            "Tên sản phẩm mẫu",
-            "đường dẫn hình ảnh",
-            "Mô tả sản phẩm",
-            true,
-            false,
-            true,
-            1000000.0,
-            "Danh mục sản phẩm"
-        );
-        
-        return ResponseEntity.ok(sample);
-    }
+
 } 

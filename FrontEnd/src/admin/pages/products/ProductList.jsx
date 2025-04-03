@@ -41,7 +41,7 @@ const ProductList = () => {
                            product.des.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Filter by category
-      const matchesCategory = selectedCategory === '' || product.category === selectedCategory;
+      const matchesCategory = selectedCategory === '' || product.category?.name === selectedCategory;
       
       return matchesSearch && matchesCategory;
     })
@@ -176,7 +176,7 @@ const ProductList = () => {
                     />
                   </td>
                   <td>{product.name}</td>
-                  <td>{product.category}</td>
+                  <td>{product.category?.name || 'Uncategorized'}</td>
                   <td>{product.price.toLocaleString()} VNĐ</td>
                   <td>
                     <span className={`status-badge ${product.inStock ? 'in-stock' : 'out-of-stock'}`}>
