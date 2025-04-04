@@ -70,15 +70,36 @@ public class UserController {
 
     @Operation(summary = "Lấy thông tin người dùng theo ID")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Tìm thấy người dùng"),
-        @ApiResponse(responseCode = "404", description = "Không tìm thấy người dùng", content = @Content)
+        @ApiResponse(responseCode = "200", description = "Lấy thông tin thành công", 
+            content = @Content(schema = @Schema(implementation = User.class))),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy người dùng", 
+            content = @Content(schema = @Schema(implementation = Map.class))),
+        @ApiResponse(responseCode = "401", description = "Không có quyền truy cập", 
+            content = @Content)
     })
-    @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(
-            @Parameter(description = "ID của người dùng") @PathVariable Long id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/UserServices/user/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        try {
+            Optional<User> userOptional = userService.getUserById(id);
+            
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                // Ẩn thông tin nhạy cảm
+                user.setPassword(null);
+                user.setVerificationCode(null);
+                user.setResetPasswordToken(null);
+                
+                return ResponseEntity.ok(user);
+            } else {
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Không tìm thấy người dùng với ID: " + id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Lỗi khi lấy thông tin người dùng: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     @Operation(summary = "Lấy thông tin người dùng theo tên người dùng")

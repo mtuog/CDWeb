@@ -108,7 +108,7 @@ const router = createBrowserRouter([
 function App() {
     return (
         <Provider store={store}>
-            <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+            <GoogleOAuthProvider clientId="142819065684-4ulb5ra203pjp7vuop3m2sl0fcdmov5m.apps.googleusercontent.com">
                 <div className="App">
                     <RouterProvider router={router} />
                 </div>

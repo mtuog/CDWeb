@@ -27,54 +27,70 @@ function Login() {
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
+                setIsLoading(true);
+                
+                // 1. Lấy thông tin từ Google API
                 const userInfo = await axios.get(
                     'https://www.googleapis.com/oauth2/v3/userinfo',
                     { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
                 );
 
                 const { email, name, picture } = userInfo.data;
-                console.log(email, name, picture);
+                console.log("Google login info:", email, name, picture);
                 
-                // Handle Google login with backend
-                setIsLoading(true);
-                try {
-                    const response = await axios.post(`http://${BACKEND_URL_HTTP}/api/UserServices/login-google`, {
-                        email: email,
-                        userName: name
-                    });
+                // 2. Gửi thông tin đến backend
+                const response = await axios.post(`http://${BACKEND_URL_HTTP}/api/UserServices/login-google`, {
+                    email: email,
+                    userName: name
+                });
+                
+                // 3. Xử lý phản hồi từ backend
+                if (response.status === 200) {
+                    const { token, refreshToken, userId, userName, userRole } = response.data;
                     
-                    setIsLoading(false);
+                    // Lưu thông tin vào localStorage
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('refreshToken', refreshToken);
+                    localStorage.setItem('userId', userId);
+                    localStorage.setItem('userName', userName);
+                    localStorage.setItem('userRole', userRole);
                     
-                    if (response.status === 200) {
-                        const { token, refreshToken, userId, userName, userRole } = response.data;
-                        localStorage.setItem('token', token);
-                        localStorage.setItem('refreshToken', refreshToken);
-                        localStorage.setItem('userId', userId);
-                        localStorage.setItem('userName', userName);
-                        localStorage.setItem('userRole', userRole);
-                        
-                        Swal.fire({
-                            title: 'Login successful!',
-                            icon: 'success',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            navigate('/');
-                        });
-                    }
-                } catch (error) {
-                    setIsLoading(false);
+                    // Trigger event để cập nhật header
+                    window.dispatchEvent(new Event('auth-change'));
+                    
+                    // Thông báo thành công và chuyển hướng
                     Swal.fire({
-                        title: 'Login failed!',
-                        text: error.response?.data?.message || 'An error occurred during login',
-                        icon: 'error'
+                        title: 'Đăng nhập Google thành công!',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        navigate('/');
                     });
                 }
-            } catch (err) {
-                console.log(err);
+            } catch (error) {
+                console.error("Google login error:", error);
+                
+                // Hiển thị thông báo lỗi
+                Swal.fire({
+                    title: 'Đăng nhập Google thất bại!',
+                    text: error.response?.data?.message || 'Đã xảy ra lỗi khi đăng nhập bằng Google',
+                    icon: 'error',
+                    confirmButtonColor: "#3085d6",
+                });
+            } finally {
+                setIsLoading(false);
             }
         },
-        onError: error => console.log('Login Failed:', error)
+        onError: error => {
+            console.error('Google Login Failed:', error);
+            Swal.fire({
+                title: 'Không thể kết nối với Google',
+                text: 'Vui lòng thử lại sau',
+                icon: 'error',
+                confirmButtonColor: "#3085d6",
+            });
+        }
     });
     
     const loginHandler = async (e) => {
@@ -115,6 +131,9 @@ function Login() {
                 localStorage.setItem('userId', userId);
                 localStorage.setItem('userName', userName);
                 localStorage.setItem('userRole', userRole);
+                
+                // Trigger event để cập nhật header
+                window.dispatchEvent(new Event('auth-change'));
                 
                 Swal.fire({
                     title: 'Login successful!',

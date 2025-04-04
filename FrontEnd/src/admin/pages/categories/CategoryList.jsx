@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { 
+  getAllCategories, 
+  createCategory, 
+  updateCategory, 
+  deleteCategory 
+} from '../../../api/categoryApi';
 
 const CategoryList = () => {
   const [categories, setCategories] = useState([]);
@@ -8,64 +14,50 @@ const CategoryList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', description: '', parent_id: '', status: 'active' });
+  const [currentCategory, setCurrentCategory] = useState({ id: null, name: '' });
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // Mock data for categories
-  const mockCategories = [
-    { id: 1, name: 'Quần áo nam', description: 'Các sản phẩm dành cho nam giới', parent_id: null, status: 'active', product_count: 24 },
-    { id: 2, name: 'Quần áo nữ', description: 'Các sản phẩm dành cho nữ giới', parent_id: null, status: 'active', product_count: 36 },
-    { id: 3, name: 'Áo thun', description: 'Áo thun các loại', parent_id: 1, status: 'active', product_count: 12 },
-    { id: 4, name: 'Quần jeans', description: 'Quần jeans nam các loại', parent_id: 1, status: 'active', product_count: 8 },
-    { id: 5, name: 'Váy đầm', description: 'Váy đầm các loại', parent_id: 2, status: 'active', product_count: 15 },
-    { id: 6, name: 'Áo sơ mi', description: 'Áo sơ mi cho nam và nữ', parent_id: null, status: 'active', product_count: 18 },
-    { id: 7, name: 'Phụ kiện', description: 'Các loại phụ kiện thời trang', parent_id: null, status: 'active', product_count: 30 },
-    { id: 8, name: 'Giày dép', description: 'Giày dép các loại', parent_id: null, status: 'inactive', product_count: 0 },
-  ];
-
   useEffect(() => {
-    // Simulate API call
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        // In a real application, this would be an API call
-        setTimeout(() => {
-          setCategories(mockCategories);
-          setLoading(false);
-        }, 500);
-      } catch (error) {
-        toast.error("Không thể tải danh sách danh mục. Vui lòng thử lại sau.");
-        setLoading(false);
-        console.error("Error fetching categories:", error);
-      }
-    };
-    
     fetchCategories();
   }, []);
 
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllCategories();
+      
+      // Chuẩn bị dữ liệu danh mục để hiển thị
+      const preparedCategories = data.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        product_count: cat.productCount || 0
+      }));
+      
+      setCategories(preparedCategories);
+      setLoading(false);
+    } catch (error) {
+      toast.error("Không thể tải danh sách danh mục. Vui lòng thử lại sau.");
+      setLoading(false);
+      console.error("Error fetching categories:", error);
+    }
+  };
+
   // Filter categories based on search term
   const filteredCategories = categories.filter(category => 
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Get parent category name by id
-  const getParentName = (parentId) => {
-    if (!parentId) return 'Không có';
-    const parent = categories.find(cat => cat.id === parentId);
-    return parent ? parent.name : 'Không tìm thấy';
-  };
 
   // Handle opening the modal for adding new category
   const handleAddNew = () => {
-    setCurrentCategory({ id: null, name: '', description: '', parent_id: '', status: 'active' });
+    setCurrentCategory({ id: null, name: '' });
     setEditMode(false);
     setShowModal(true);
   };
 
   // Handle opening the modal for editing category
   const handleEdit = (category) => {
-    setCurrentCategory({ ...category, parent_id: category.parent_id || '' });
+    setCurrentCategory({ ...category });
     setEditMode(true);
     setShowModal(true);
   };
@@ -77,7 +69,7 @@ const CategoryList = () => {
   };
 
   // Handle category form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
@@ -86,32 +78,28 @@ const CategoryList = () => {
       return;
     }
     
-    // In a real application, this would call an API to save the category
     try {
+      // Chuẩn bị dữ liệu để gửi đến API
+      const categoryData = {
+        name: currentCategory.name
+      };
+      
       if (editMode) {
         // Update existing category
-        const updatedCategories = categories.map(cat => 
-          cat.id === currentCategory.id ? 
-          { ...currentCategory, parent_id: currentCategory.parent_id || null } : 
-          cat
-        );
-        setCategories(updatedCategories);
+        await updateCategory(currentCategory.id, categoryData);
         toast.success("Cập nhật danh mục thành công!");
       } else {
         // Add new category
-        const newCategory = {
-          ...currentCategory,
-          id: Math.max(...categories.map(c => c.id), 0) + 1,
-          parent_id: currentCategory.parent_id || null,
-          product_count: 0
-        };
-        setCategories([...categories, newCategory]);
+        await createCategory(categoryData);
         toast.success("Thêm danh mục mới thành công!");
       }
       
+      // Refresh categories list
+      fetchCategories();
+      
       // Close modal and reset form
       setShowModal(false);
-      setCurrentCategory({ id: null, name: '', description: '', parent_id: '', status: 'active' });
+      setCurrentCategory({ id: null, name: '' });
     } catch (error) {
       toast.error("Có lỗi xảy ra. Vui lòng thử lại sau.");
       console.error("Error saving category:", error);
@@ -119,7 +107,7 @@ const CategoryList = () => {
   };
 
   // Handle deleting a category
-  const handleDelete = (categoryId) => {
+  const handleDelete = async (categoryId) => {
     try {
       // Check if category has products
       const category = categories.find(cat => cat.id === categoryId);
@@ -129,18 +117,12 @@ const CategoryList = () => {
         return;
       }
       
-      // Check if category has children
-      const hasChildren = categories.some(cat => cat.parent_id === categoryId);
-      if (hasChildren) {
-        toast.error("Không thể xóa danh mục này vì có danh mục con.");
-        setConfirmDelete(null);
-        return;
-      }
-      
-      // In a real application, this would call an API to delete the category
-      const updatedCategories = categories.filter(cat => cat.id !== categoryId);
-      setCategories(updatedCategories);
+      // Call API to delete category
+      await deleteCategory(categoryId);
       toast.success("Xóa danh mục thành công!");
+      
+      // Refresh categories list
+      fetchCategories();
       setConfirmDelete(null);
     } catch (error) {
       toast.error("Có lỗi xảy ra khi xóa danh mục. Vui lòng thử lại sau.");
@@ -201,10 +183,7 @@ const CategoryList = () => {
             <tr>
               <th>ID</th>
               <th>Tên danh mục</th>
-              <th>Mô tả</th>
-              <th>Danh mục cha</th>
               <th>Số sản phẩm</th>
-              <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
@@ -214,14 +193,7 @@ const CategoryList = () => {
                 <tr key={category.id}>
                   <td>{category.id}</td>
                   <td>{category.name}</td>
-                  <td>{category.description}</td>
-                  <td>{getParentName(category.parent_id)}</td>
                   <td>{category.product_count}</td>
-                  <td>
-                    <span className={`status-badge ${category.status === 'active' ? 'active' : 'inactive'}`}>
-                      {category.status === 'active' ? 'Hoạt động' : 'Ẩn'}
-                    </span>
-                  </td>
                   <td className="actions-cell">
                     <button 
                       className="edit-button" 
@@ -243,7 +215,7 @@ const CategoryList = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="no-data">
+                <td colSpan="4" className="no-data">
                   {searchTerm ? 'Không tìm thấy danh mục nào phù hợp.' : 'Chưa có danh mục nào.'}
                 </td>
               </tr>
@@ -273,47 +245,6 @@ const CategoryList = () => {
                   onChange={handleInputChange}
                   required
                 />
-              </div>
-              <div className="form-group">
-                <label htmlFor="description">Mô tả</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={currentCategory.description}
-                  onChange={handleInputChange}
-                  rows="3"
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label htmlFor="parent_id">Danh mục cha</label>
-                <select
-                  id="parent_id"
-                  name="parent_id"
-                  value={currentCategory.parent_id}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Không có</option>
-                  {categories
-                    .filter(cat => cat.id !== currentCategory.id) // Cannot select itself as parent
-                    .map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))
-                  }
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="status">Trạng thái</label>
-                <select
-                  id="status"
-                  name="status"
-                  value={currentCategory.status}
-                  onChange={handleInputChange}
-                >
-                  <option value="active">Hoạt động</option>
-                  <option value="inactive">Ẩn</option>
-                </select>
               </div>
               <div className="form-actions">
                 <button type="button" className="cancel-button" onClick={handleCloseModal}>

@@ -1,125 +1,108 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const TopProductsTable = () => {
-  // Mock data - trong thực tế sẽ lấy từ API
-  const topProducts = [
-    {
-      id: 1,
-      name: 'Áo thun nam basic',
-      image: 'https://via.placeholder.com/50',
-      category: 'Áo nam',
-      price: '250,000đ',
-      sold: 245,
-      stock: 120
-    },
-    {
-      id: 2,
-      name: 'Váy liền thân',
-      image: 'https://via.placeholder.com/50',
-      category: 'Váy',
-      price: '450,000đ',
-      sold: 198,
-      stock: 75
-    },
-    {
-      id: 3,
-      name: 'Quần jean nam',
-      image: 'https://via.placeholder.com/50',
-      category: 'Quần nam',
-      price: '420,000đ',
-      sold: 186,
-      stock: 90
-    },
-    {
-      id: 4,
-      name: 'Áo khoác nữ',
-      image: 'https://via.placeholder.com/50',
-      category: 'Áo nữ',
-      price: '550,000đ',
-      sold: 165,
-      stock: 50
-    },
-    {
-      id: 5,
-      name: 'Giày thể thao',
-      image: 'https://via.placeholder.com/50',
-      category: 'Giày',
-      price: '850,000đ',
-      sold: 142,
-      stock: 30
-    }
-  ];
-
+const TopProductsTable = ({ products, formatCurrency }) => {
   return (
-    <div className="table-responsive">
-      <table className="products-table">
-        <thead>
-          <tr>
-            <th>Sản phẩm</th>
-            <th>Danh mục</th>
-            <th>Giá</th>
-            <th>Đã bán</th>
-            <th>Tồn kho</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {topProducts.map(product => (
-            <tr key={product.id}>
-              <td className="product-cell">
-                <img src={product.image} alt={product.name} className="product-image" />
-                <span className="product-name">{product.name}</span>
-              </td>
-              <td>{product.category}</td>
-              <td>{product.price}</td>
-              <td>{product.sold}</td>
-              <td>{product.stock}</td>
-              <td>
-                <Link to={`/admin/products/${product.id}`} className="action-button">
-                  <i className="fa fa-eye"></i>
-                </Link>
-                <Link to={`/admin/products/${product.id}/edit`} className="action-button">
-                  <i className="fa fa-edit"></i>
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      
-      <div className="see-all-link">
-        <Link to="/admin/products">Xem tất cả sản phẩm</Link>
+    <div className="top-products-section">
+      <div className="section-header">
+        <h2>Sản phẩm bán chạy</h2>
+        <Link to="/admin/products" className="view-all-link">
+          Xem tất cả
+        </Link>
       </div>
       
+      <div className="table-container">
+        <table className="top-products-table">
+          <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>Giá</th>
+              <th>Đã bán</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map(product => (
+              <tr key={product.id}>
+                <td className="product-info">
+                  <div className="product-image">
+                    <img src={product.image} alt={product.name} />
+                  </div>
+                  <div className="product-name">
+                    <Link to={`/admin/products/${product.id}`}>
+                      {product.name}
+                    </Link>
+                  </div>
+                </td>
+                <td className="product-price">{formatCurrency(product.price)}</td>
+                <td className="product-sold">{product.sold}</td>
+              </tr>
+            ))}
+            {products.length === 0 && (
+              <tr>
+                <td colSpan="3" className="no-data">
+                  Chưa có dữ liệu sản phẩm
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
       <style jsx>{`
-        .table-responsive {
+        .top-products-section {
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          padding: 20px;
+          margin-bottom: 24px;
+        }
+        
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        
+        .section-header h2 {
+          margin: 0;
+          font-size: 18px;
+          color: #333;
+        }
+        
+        .view-all-link {
+          font-size: 14px;
+          color: #007bff;
+          text-decoration: none;
+        }
+        
+        .view-all-link:hover {
+          text-decoration: underline;
+        }
+        
+        .table-container {
           overflow-x: auto;
         }
         
-        .products-table {
+        .top-products-table {
           width: 100%;
           border-collapse: collapse;
         }
         
-        .products-table th,
-        .products-table td {
+        .top-products-table th,
+        .top-products-table td {
           padding: 12px 16px;
           text-align: left;
           border-bottom: 1px solid #e9ecef;
         }
         
-        .products-table th {
+        .top-products-table th {
           font-weight: 600;
           color: #495057;
           background-color: #f8f9fa;
         }
         
-        .products-table tr:hover {
-          background-color: #f8f9fa;
-        }
-        
-        .product-cell {
+        .product-info {
           display: flex;
           align-items: center;
         }
@@ -127,45 +110,40 @@ const TopProductsTable = () => {
         .product-image {
           width: 40px;
           height: 40px;
-          border-radius: 4px;
-          object-fit: cover;
           margin-right: 12px;
+          border-radius: 4px;
+          overflow: hidden;
         }
         
-        .product-name {
+        .product-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .product-name a {
+          color: #212529;
+          text-decoration: none;
           font-weight: 500;
         }
         
-        .action-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: 4px;
-          color: #495057;
-          text-decoration: none;
-          margin-right: 8px;
-          transition: background-color 0.3s;
-        }
-        
-        .action-button:hover {
-          background-color: #e9ecef;
-        }
-        
-        .see-all-link {
-          margin-top: 16px;
-          text-align: right;
-        }
-        
-        .see-all-link a {
+        .product-name a:hover {
           color: #007bff;
-          text-decoration: none;
-          font-size: 14px;
         }
         
-        .see-all-link a:hover {
-          text-decoration: underline;
+        .product-price {
+          font-weight: 500;
+        }
+        
+        .product-sold {
+          font-weight: 500;
+          color: #28a745;
+        }
+        
+        .no-data {
+          text-align: center;
+          color: #6c757d;
+          padding: 24px 0;
         }
       `}</style>
     </div>

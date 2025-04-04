@@ -48,8 +48,8 @@ CREATE TABLE users (
     otp VARCHAR(6),
     otp_expiry_time TIMESTAMP,
     is_verified BIT DEFAULT 0,
-    reset_password_token VARCHAR(255),
-    reset_password_expiry TIMESTAMP,
+    reset_password_token VARCHAR(64),
+    reset_password_token_expires_at TIMESTAMP,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
@@ -75,6 +75,8 @@ CREATE TABLE order_items (
     product_id BIGINT NOT NULL,
     quantity INT NOT NULL,
     price DOUBLE PRECISION NOT NULL,
+    size VARCHAR(20),
+    color VARCHAR(30),
     PRIMARY KEY (id),
     FOREIGN KEY (order_id) REFERENCES orders(id),
     FOREIGN KEY (product_id) REFERENCES products(id)

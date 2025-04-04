@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+import { BACKEND_URL_HTTP } from '../../../config';
 
 const OrderList = () => {
   const [orders, setOrders] = useState([]);
@@ -9,151 +11,64 @@ const OrderList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
-  
-  // Mock data for orders
-  const mockOrders = [
-    { 
-      id: 'ORD-001', 
-      customer: 'Nguyễn Văn A', 
-      email: 'nguyenvana@example.com',
-      phone: '0912345678',
-      date: '2023-07-28', 
-      amount: 850000, 
-      items: 3,
-      payment_method: 'COD',
-      status: 'Đã giao hàng' 
-    },
-    { 
-      id: 'ORD-002', 
-      customer: 'Trần Thị B', 
-      email: 'tranthib@example.com',
-      phone: '0923456789',
-      date: '2023-07-27', 
-      amount: 1250000, 
-      items: 5,
-      payment_method: 'Banking',
-      status: 'Đang vận chuyển' 
-    },
-    { 
-      id: 'ORD-003', 
-      customer: 'Phạm Văn C', 
-      email: 'phamvanc@example.com',
-      phone: '0934567890',
-      date: '2023-07-26', 
-      amount: 520000, 
-      items: 2,
-      payment_method: 'COD',
-      status: 'Đang xử lý' 
-    },
-    { 
-      id: 'ORD-004', 
-      customer: 'Lê Thị D', 
-      email: 'lethid@example.com',
-      phone: '0945678901',
-      date: '2023-07-25', 
-      amount: 780000, 
-      items: 3,
-      payment_method: 'Banking',
-      status: 'Đã giao hàng' 
-    },
-    { 
-      id: 'ORD-005', 
-      customer: 'Hoàng Văn E', 
-      email: 'hoangvane@example.com',
-      phone: '0956789012',
-      date: '2023-07-24', 
-      amount: 1450000, 
-      items: 6,
-      payment_method: 'COD',
-      status: 'Đã hủy' 
-    },
-    { 
-      id: 'ORD-006', 
-      customer: 'Ngô Thị F', 
-      email: 'ngothif@example.com',
-      phone: '0967890123',
-      date: '2023-07-23', 
-      amount: 640000, 
-      items: 2,
-      payment_method: 'Banking',
-      status: 'Đã giao hàng' 
-    },
-    { 
-      id: 'ORD-007', 
-      customer: 'Vũ Văn G', 
-      email: 'vuvang@example.com',
-      phone: '0978901234',
-      date: '2023-07-22', 
-      amount: 920000, 
-      items: 4,
-      payment_method: 'COD',
-      status: 'Đang vận chuyển' 
-    },
-    { 
-      id: 'ORD-008', 
-      customer: 'Đặng Thị H', 
-      email: 'dangthih@example.com',
-      phone: '0989012345',
-      date: '2023-07-21', 
-      amount: 350000, 
-      items: 1,
-      payment_method: 'Banking',
-      status: 'Đang xử lý' 
-    },
-    { 
-      id: 'ORD-009', 
-      customer: 'Bùi Văn I', 
-      email: 'buivani@example.com',
-      phone: '0990123456',
-      date: '2023-07-20', 
-      amount: 1680000, 
-      items: 7,
-      payment_method: 'COD',
-      status: 'Đã giao hàng' 
-    },
-    { 
-      id: 'ORD-010', 
-      customer: 'Trịnh Thị K', 
-      email: 'trinhthik@example.com',
-      phone: '0901234567',
-      date: '2023-07-19', 
-      amount: 420000, 
-      items: 2,
-      payment_method: 'Banking',
-      status: 'Đã hủy' 
-    }
-  ];
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   
   // Status options for the filter
   const statusOptions = [
     { value: 'all', label: 'Tất cả trạng thái' },
-    { value: 'Đang xử lý', label: 'Đang xử lý' },
-    { value: 'Đang vận chuyển', label: 'Đang vận chuyển' },
-    { value: 'Đã giao hàng', label: 'Đã giao hàng' },
-    { value: 'Đã hủy', label: 'Đã hủy' }
+    { value: 'PENDING', label: 'Đang xử lý' },
+    { value: 'PROCESSING', label: 'Đang chuẩn bị' },
+    { value: 'SHIPPED', label: 'Đang vận chuyển' },
+    { value: 'DELIVERED', label: 'Đã giao hàng' },
+    { value: 'CANCELLED', label: 'Đã hủy' }
   ];
   
+  // Trạng thái hiển thị tiếng Việt
+  const statusTranslations = {
+    'PENDING': 'Đang xử lý',
+    'PROCESSING': 'Đang chuẩn bị',
+    'SHIPPED': 'Đang vận chuyển',
+    'DELIVERED': 'Đã giao hàng',
+    'CANCELLED': 'Đã hủy'
+  };
+  
   useEffect(() => {
-    // Simulate API call
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        // In a real application, this would be an API call
-        setTimeout(() => {
-          setOrders(mockOrders);
-          setFilteredOrders(mockOrders);
-          setLoading(false);
-        }, 500);
-      } catch (error) {
-        toast.error("Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.");
-        setLoading(false);
-        console.error("Error fetching orders:", error);
-      }
-    };
-    
     fetchOrders();
   }, []);
+  
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get(`http://${BACKEND_URL_HTTP}/api/orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const formattedOrders = response.data.map(order => ({
+        id: order.id,
+        customer: order.user ? order.user.username : 'Khách vãng lai',
+        email: order.user ? order.user.email : 'N/A',
+        phone: order.phone,
+        date: new Date(order.createdAt).toISOString().split('T')[0],
+        amount: order.totalAmount,
+        items: order.orderItems ? order.orderItems.length : 0,
+        payment_method: order.paymentMethod,
+        status: order.status,
+        statusVi: statusTranslations[order.status] || order.status
+      }));
+      
+      setOrders(formattedOrders);
+      setFilteredOrders(formattedOrders);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.");
+      setLoading(false);
+    }
+  };
   
   useEffect(() => {
     // Apply filters and search
@@ -208,13 +123,13 @@ const OrderList = () => {
   
   // Format date string to display format
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
   
   // Format price to Vietnamese format
   const formatPrice = (price) => {
-    return price.toLocaleString('vi-VN') + ' ₫';
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
   
   // Handle search input change
@@ -243,13 +158,14 @@ const OrderList = () => {
   // Get order status CSS class
   const getStatusClass = (status) => {
     switch (status) {
-      case 'Đã giao hàng':
+      case 'DELIVERED':
         return 'delivered';
-      case 'Đang vận chuyển':
+      case 'SHIPPED':
         return 'shipping';
-      case 'Đang xử lý':
+      case 'PENDING':
+      case 'PROCESSING':
         return 'processing';
-      case 'Đã hủy':
+      case 'CANCELLED':
         return 'canceled';
       default:
         return '';
@@ -269,6 +185,25 @@ const OrderList = () => {
   const getSortIndicator = (key) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
+  
+  // Chỉnh sửa hàm updateOrderStatus để gọi API
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      await axios.put(`http://${BACKEND_URL_HTTP}/api/orders/${orderId}/status?status=${newStatus}`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      toast.success("Cập nhật trạng thái đơn hàng thành công!");
+      fetchOrders(); // Tải lại danh sách đơn hàng
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast.error("Không thể cập nhật trạng thái đơn hàng. Vui lòng thử lại sau.");
+    }
   };
   
   if (loading) {
@@ -369,7 +304,14 @@ const OrderList = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="loading-cell">
+                  <div className="loading-spinner"></div>
+                  <div>Đang tải dữ liệu...</div>
+                </td>
+              </tr>
+            ) : filteredOrders.length > 0 ? (
               filteredOrders.map(order => (
                 <tr key={order.id}>
                   <td>{order.id}</td>
@@ -388,9 +330,17 @@ const OrderList = () => {
                     )}
                   </td>
                   <td>
-                    <span className={`status-badge ${getStatusClass(order.status)}`}>
-                      {order.status}
-                    </span>
+                    <select 
+                      className={`status-select ${getStatusClass(order.status)}`}
+                      value={order.status}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                    >
+                      {statusOptions.filter(option => option.value !== 'all').map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td>
                     <div className="action-buttons">
@@ -576,30 +526,29 @@ const OrderList = () => {
           color: #0d6efd;
         }
         
-        .status-badge {
-          display: inline-block;
-          padding: 4px 8px;
+        .status-select {
+          padding: 8px 12px;
+          border: 1px solid #ced4da;
           border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
+          font-size: 14px;
         }
         
-        .status-badge.delivered {
+        .status-select.delivered {
           background-color: #d4edda;
           color: #155724;
         }
         
-        .status-badge.shipping {
+        .status-select.shipping {
           background-color: #cce5ff;
           color: #004085;
         }
         
-        .status-badge.processing {
+        .status-select.processing {
           background-color: #fff3cd;
           color: #856404;
         }
         
-        .status-badge.canceled {
+        .status-select.canceled {
           background-color: #f8d7da;
           color: #721c24;
         }
@@ -635,6 +584,26 @@ const OrderList = () => {
           text-align: center;
           color: #6c757d;
           padding: 20px 0;
+        }
+        
+        .loading-cell {
+          text-align: center;
+          padding: 20px 0;
+        }
+        
+        .loading-spinner {
+          margin-bottom: 8px;
+          border: 4px solid rgba(0, 0, 0, 0.1);
+          border-top: 4px solid #007bff;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         
         @media (max-width: 768px) {

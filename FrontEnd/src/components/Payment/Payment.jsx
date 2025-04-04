@@ -4,6 +4,9 @@ import {loadCart, removeFromCart, updateQuantity, clearCart} from "../../store/A
 import {useDispatch, useSelector} from "react-redux";
 import {Link, useNavigate} from "react-router-dom";
 import {getProductById} from '../../api/productApi';
+import axios from 'axios';
+import { BACKEND_URL_HTTP } from '../../config';
+import Swal from 'sweetalert2';
 
 export async function loadcart() {
     const cart = JSON.parse(localStorage.getItem('cart')) ?? [];
@@ -94,30 +97,94 @@ const Payment = () => {
         }, 0);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
         // Validate form
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.address || !formData.city) {
-            alert('Vui lòng điền đầy đủ thông tin');
+            Swal.fire({
+                title: 'Thiếu thông tin',
+                text: 'Vui lòng điền đầy đủ thông tin thanh toán',
+                icon: 'warning',
+                confirmButtonColor: '#e65540'
+            });
             return;
         }
 
-        // Here you would typically send the order data to your backend
-        console.log('Order submitted:', {
-            customer: formData,
-            items: cartItems,
-            total: calculateSubtotal()
-        });
-
-        // Clear cart after successful order
-        dispatch(clearCart());
-        
-        // Show success message
-        alert('Đặt hàng thành công! Cảm ơn bạn đã mua hàng.');
-        
-        // Redirect to home page
-        navigate('/');
+        try {
+            setLoading(true);
+            
+            // Lấy thông tin người dùng từ localStorage
+            const userId = localStorage.getItem('userId');
+            const token = localStorage.getItem('token');
+            
+            // Chuẩn bị thông tin đơn hàng
+            const orderItems = cartItems.map(item => {
+                const product = productDetails[item.id];
+                return {
+                    product: { id: item.id },
+                    quantity: item.quantity,
+                    price: product.price,
+                    size: item.size || "Standard",
+                    color: item.color || "Default"
+                };
+            });
+            
+            const totalAmount = calculateSubtotal();
+            
+            // Tạo đối tượng đơn hàng
+            const orderData = {
+                user: userId ? { id: userId } : null,
+                totalAmount: totalAmount,
+                status: "PENDING",
+                shippingAddress: `${formData.address}, ${formData.city}${formData.zipCode ? ', ' + formData.zipCode : ''}`,
+                phone: formData.phone,
+                paymentMethod: formData.paymentMethod,
+                orderItems: orderItems
+            };
+            
+            console.log('Sending order data:', orderData);
+            
+            // Gửi đơn hàng đến API
+            const response = await axios.post(`http://${BACKEND_URL_HTTP}/api/orders`, orderData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+            
+            console.log('Order created:', response.data);
+            
+            if (response.status === 201) {
+                // Clear cart after successful order
+                dispatch(clearCart());
+                
+                // Hiển thị thông báo thành công
+                Swal.fire({
+                    title: 'Đặt hàng thành công!',
+                    text: 'Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đang được xử lý.',
+                    icon: 'success',
+                    confirmButtonColor: '#e65540'
+                }).then(() => {
+                    // Chuyển hướng về trang chủ
+                    navigate('/');
+                });
+            } else {
+                throw new Error('Lỗi khi tạo đơn hàng');
+            }
+            
+        } catch (error) {
+            console.error('Order submission error:', error);
+            
+            Swal.fire({
+                title: 'Lỗi đặt hàng',
+                text: error.response?.data?.message || 'Đã xảy ra lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.',
+                icon: 'error',
+                confirmButtonColor: '#e65540'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Show loading state

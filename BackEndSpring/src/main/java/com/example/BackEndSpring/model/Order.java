@@ -1,5 +1,6 @@
 package com.example.BackEndSpring.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,6 +15,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.CascadeType;
 
 @Entity
 @Table(name = "orders")
@@ -56,7 +58,8 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<OrderItem> orderItems = new ArrayList<>();
     
     // Constructors
@@ -150,5 +153,17 @@ public class Order {
     
     public void setOrderItems(List<OrderItem> orderItems) {
         this.orderItems = orderItems;
+    }
+    
+    // Helper method để thêm OrderItem vào Order
+    public void addOrderItem(OrderItem item) {
+        orderItems.add(item);
+        item.setOrder(this);
+    }
+    
+    // Helper method để xóa OrderItem khỏi Order
+    public void removeOrderItem(OrderItem item) {
+        orderItems.remove(item);
+        item.setOrder(null);
     }
 } 

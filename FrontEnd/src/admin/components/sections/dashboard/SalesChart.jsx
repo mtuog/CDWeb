@@ -1,121 +1,88 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const SalesChart = () => {
-  const canvasRef = useRef(null);
-  
-  useEffect(() => {
-    // Mock data - trong thực tế sẽ lấy từ API
-    const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
-    const salesData = [12000000, 15000000, 10000000, 18000000, 14000000, 16000000, 19000000, 22000000, 20000000, 25000000, 23000000, 28000000];
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Canvas dimensions
-    const width = canvas.width;
-    const height = canvas.height;
-    const padding = 40;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2;
-    
-    // Find max value for scaling
-    const maxValue = Math.max(...salesData);
-    const scale = chartHeight / maxValue;
-    
-    // Draw axis
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.strokeStyle = '#ddd';
-    ctx.stroke();
-    
-    // Draw horizontal grid lines
-    const numGridLines = 5;
-    ctx.font = '12px Arial';
-    ctx.fillStyle = '#666';
-    ctx.textAlign = 'right';
-    
-    for (let i = 0; i <= numGridLines; i++) {
-      const y = padding + (chartHeight / numGridLines) * (numGridLines - i);
-      const value = (maxValue / numGridLines) * i;
-      
-      ctx.beginPath();
-      ctx.moveTo(padding, y);
-      ctx.lineTo(width - padding, y);
-      ctx.strokeStyle = '#f0f0f0';
-      ctx.stroke();
-      
-      // Format currency value
-      const formattedValue = new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND',
-        maximumFractionDigits: 0
-      }).format(value);
-      
-      ctx.fillText(formattedValue, padding - 10, y + 5);
+const SalesChart = ({ data, period, formatCurrency }) => {
+  // Custom tooltip for revenue chart
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip">
+          <p className="label">{`${label}`}</p>
+          <p className="desc">{`Doanh thu: ${formatCurrency(payload[0].value)}`}</p>
+          <p className="desc">{`Đơn hàng: ${payload[1].value}`}</p>
+        </div>
+      );
     }
-    
-    // Draw months
-    ctx.textAlign = 'center';
-    const barWidth = chartWidth / months.length * 0.6;
-    const barSpacing = chartWidth / months.length * 0.4;
-    const barOffset = (chartWidth / months.length - barWidth) / 2;
-    
-    months.forEach((month, i) => {
-      const x = padding + (chartWidth / months.length) * i + barOffset + barWidth / 2;
-      ctx.fillText(month, x, height - padding + 20);
-    });
-    
-    // Draw bars with gradient
-    salesData.forEach((value, i) => {
-      const barHeight = value * scale;
-      const x = padding + (chartWidth / months.length) * i + barOffset;
-      const y = height - padding - barHeight;
-      
-      // Create gradient
-      const gradient = ctx.createLinearGradient(0, y, 0, height - padding);
-      gradient.addColorStop(0, '#4a69bd');
-      gradient.addColorStop(1, '#60a3bc');
-      
-      // Draw bar
-      ctx.fillStyle = gradient;
-      ctx.fillRect(x, y, barWidth, barHeight);
-      
-      // Add value on top of bar
-      ctx.fillStyle = '#333';
-      ctx.textAlign = 'center';
-      const shortValue = (value / 1000000).toFixed(1) + 'M';
-      ctx.fillText(shortValue, x + barWidth / 2, y - 10);
-    });
-    
-  }, []);
+    return null;
+  };
 
   return (
-    <div className="sales-chart-container">
-      <canvas 
-        ref={canvasRef} 
-        width={900} 
-        height={400} 
-        className="sales-chart"
-      ></canvas>
-      
+    <div className="chart-section">
+      <div className="chart-container revenue-chart">
+        <div className="chart-header">
+          <h2>Phân tích doanh thu</h2>
+          <div className="chart-period">
+            {period === 'month' ? 'Theo tháng' : 'Theo tuần'}
+          </div>
+        </div>
+        <div className="chart-content">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+              <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="revenue" name="Doanh thu" fill="#8884d8" />
+              <Bar yAxisId="right" dataKey="orders" name="Đơn hàng" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       <style jsx>{`
-        .sales-chart-container {
-          width: 100%;
-          display: flex;
-          justify-content: center;
+        .chart-section {
+          margin-bottom: 24px;
         }
-        
-        .sales-chart {
-          max-width: 100%;
-          height: auto;
+        .chart-container {
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          padding: 20px;
+        }
+        .chart-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .chart-header h2 {
+          margin: 0;
+          font-size: 18px;
+          color: #333;
+        }
+        .chart-period {
+          font-size: 14px;
+          color: #6c757d;
+        }
+        .custom-tooltip {
+          background-color: white;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          padding: 10px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .custom-tooltip .label {
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .custom-tooltip .desc {
+          margin: 0;
+          font-size: 14px;
         }
       `}</style>
     </div>

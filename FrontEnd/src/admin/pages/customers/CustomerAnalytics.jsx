@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { getUsersStatistics } from '../../../api/userApi';
 
 const CustomerAnalytics = () => {
   const [analytics, setAnalytics] = useState(null);
@@ -119,19 +120,19 @@ const CustomerAnalytics = () => {
   };
 
   useEffect(() => {
-    // Simulate API call
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        // In a real application, this would be an API call
-        setTimeout(() => {
-          const mockData = generateMockData();
-          setAnalytics(mockData);
-          setLoading(false);
-        }, 800);
+        // Gọi API để lấy thống kê người dùng
+        const statisticsData = await getUsersStatistics();
+        setAnalytics(statisticsData);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching customer analytics:", error);
         setLoading(false);
+        
+        // Nếu lỗi, sử dụng dữ liệu mẫu
+        setAnalytics(generateMockData());
       }
     };
     

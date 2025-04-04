@@ -1,157 +1,170 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const RecentOrdersTable = () => {
-  // Mock data - trong thực tế sẽ lấy từ API
-  const recentOrders = [
-    {
-      id: 'ORD-001',
-      customer: 'Nguyễn Văn A',
-      date: '28/03/2023',
-      amount: '850,000đ',
-      status: 'Đã giao hàng',
-      statusColor: '#28a745'
-    },
-    {
-      id: 'ORD-002',
-      customer: 'Trần Thị B',
-      date: '27/03/2023',
-      amount: '1,250,000đ',
-      status: 'Đang xử lý',
-      statusColor: '#ffc107'
-    },
-    {
-      id: 'ORD-003',
-      customer: 'Lê Văn C',
-      date: '26/03/2023',
-      amount: '450,000đ',
-      status: 'Đã hủy',
-      statusColor: '#dc3545'
-    },
-    {
-      id: 'ORD-004',
-      customer: 'Phạm Thị D',
-      date: '25/03/2023',
-      amount: '2,150,000đ',
-      status: 'Đã giao hàng',
-      statusColor: '#28a745'
-    },
-    {
-      id: 'ORD-005',
-      customer: 'Hoàng Văn E',
-      date: '24/03/2023',
-      amount: '950,000đ',
-      status: 'Đang vận chuyển',
-      statusColor: '#17a2b8'
-    }
-  ];
-
+const RecentOrdersTable = ({ orders, formatCurrency, formatDate, getStatusClass, translateStatus }) => {
   return (
-    <div className="table-responsive">
-      <table className="orders-table">
-        <thead>
-          <tr>
-            <th>Mã đơn hàng</th>
-            <th>Khách hàng</th>
-            <th>Ngày đặt</th>
-            <th>Số tiền</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recentOrders.map(order => (
-            <tr key={order.id}>
-              <td>{order.id}</td>
-              <td>{order.customer}</td>
-              <td>{order.date}</td>
-              <td>{order.amount}</td>
-              <td>
-                <span 
-                  className="status-badge"
-                  style={{ backgroundColor: order.statusColor }}
-                >
-                  {order.status}
-                </span>
-              </td>
-              <td>
-                <Link to={`/admin/orders/${order.id}`} className="action-button">
-                  <i className="fa fa-eye"></i>
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      
-      <div className="see-all-link">
-        <Link to="/admin/orders">Xem tất cả đơn hàng</Link>
+    <div className="recent-orders-section">
+      <div className="section-header">
+        <h2>Đơn hàng gần đây</h2>
+        <Link to="/admin/orders" className="view-all-link">
+          Xem tất cả
+        </Link>
       </div>
       
+      <div className="table-container">
+        <table className="recent-orders-table">
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Khách hàng</th>
+              <th>Ngày đặt</th>
+              <th>Giá trị</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map(order => (
+              <tr key={order.id}>
+                <td className="order-id">#{order.id}</td>
+                <td className="customer-name">{order.customer}</td>
+                <td className="order-date">{formatDate(order.date)}</td>
+                <td className="order-amount">{formatCurrency(order.amount)}</td>
+                <td>
+                  <span className={`status-badge ${getStatusClass(order.status)}`}>
+                    {translateStatus(order.status)}
+                  </span>
+                </td>
+                <td>
+                  <Link to={`/admin/orders/${order.id}`} className="view-details-link">
+                    Chi tiết
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            {orders.length === 0 && (
+              <tr>
+                <td colSpan="6" className="no-data">
+                  Chưa có đơn hàng nào
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
       <style jsx>{`
-        .table-responsive {
+        .recent-orders-section {
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          padding: 20px;
+        }
+        
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        
+        .section-header h2 {
+          margin: 0;
+          font-size: 18px;
+          color: #333;
+        }
+        
+        .view-all-link {
+          font-size: 14px;
+          color: #007bff;
+          text-decoration: none;
+        }
+        
+        .view-all-link:hover {
+          text-decoration: underline;
+        }
+        
+        .table-container {
           overflow-x: auto;
         }
         
-        .orders-table {
+        .recent-orders-table {
           width: 100%;
           border-collapse: collapse;
         }
         
-        .orders-table th,
-        .orders-table td {
+        .recent-orders-table th,
+        .recent-orders-table td {
           padding: 12px 16px;
           text-align: left;
           border-bottom: 1px solid #e9ecef;
         }
         
-        .orders-table th {
+        .recent-orders-table th {
           font-weight: 600;
           color: #495057;
           background-color: #f8f9fa;
         }
         
-        .orders-table tr:hover {
-          background-color: #f8f9fa;
+        .order-id {
+          font-family: monospace;
+          font-weight: 600;
+        }
+        
+        .customer-name {
+          font-weight: 500;
+        }
+        
+        .order-date {
+          color: #6c757d;
+        }
+        
+        .order-amount {
+          font-weight: 500;
         }
         
         .status-badge {
           display: inline-block;
           padding: 4px 8px;
           border-radius: 4px;
-          color: white;
           font-size: 12px;
+          font-weight: 600;
         }
         
-        .action-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: 4px;
-          color: #495057;
-          text-decoration: none;
-          transition: background-color 0.3s;
+        .status-badge.delivered {
+          background-color: #d4edda;
+          color: #155724;
         }
         
-        .action-button:hover {
-          background-color: #e9ecef;
+        .status-badge.shipping {
+          background-color: #cce5ff;
+          color: #004085;
         }
         
-        .see-all-link {
-          margin-top: 16px;
-          text-align: right;
+        .status-badge.processing {
+          background-color: #fff3cd;
+          color: #856404;
         }
         
-        .see-all-link a {
+        .status-badge.canceled {
+          background-color: #f8d7da;
+          color: #721c24;
+        }
+        
+        .view-details-link {
           color: #007bff;
           text-decoration: none;
           font-size: 14px;
         }
         
-        .see-all-link a:hover {
+        .view-details-link:hover {
           text-decoration: underline;
+        }
+        
+        .no-data {
+          text-align: center;
+          color: #6c757d;
+          padding: 24px 0;
         }
       `}</style>
     </div>

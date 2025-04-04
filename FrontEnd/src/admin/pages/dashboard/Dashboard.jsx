@@ -1,16 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { BACKEND_URL_HTTP } from '../../../config';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area, PieChart, Pie, Cell
+  PieChart, Pie, Cell, ResponsiveContainer
 } from 'recharts';
+import { getAllOrders, getOrdersStatistics } from '../../../api/orderApi';
+import { getUsersStatistics } from '../../../api/userApi';
+import { getAllProducts } from '../../../api/productApi';
+import { getAllCategories } from '../../../api/categoryApi';
+import SalesChart from '../../components/sections/dashboard/SalesChart';
+import TopProductsTable from '../../components/sections/dashboard/TopProductsTable';
+import RecentOrdersTable from '../../components/sections/dashboard/RecentOrdersTable';
+import CustomerGrowthChart from '../../components/sections/dashboard/CustomerGrowthChart';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    salesData: {
+      totalRevenue: 0,
+      totalOrders: 0,
+      totalCustomers: 0,
+      pendingOrders: 0,
+      processingOrders: 0,
+      shippedOrders: 0,
+      deliveredOrders: 0,
+      canceledOrders: 0
+    },
+    monthlyRevenueData: [],
+    weeklyRevenueData: [],
+    productCategoriesData: [],
+    topSellingProducts: [],
+    recentOrders: [],
+    customerData: {
+      customerGrowth: [],
+      customerGrowthWeekly: [],
+      totalCustomers: 0,
+      activeCustomers: 0,
+      newCustomersThisMonth: 0,
+      retentionRate: 0
+    }
+  });
   const [period, setPeriod] = useState('month');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Generate mock data
+  // Generate mock data chỉ khi cần thiết (không có dữ liệu thực)
   const generateMockData = () => {
     // Sales overview
     const salesData = {
@@ -61,11 +94,28 @@ const Dashboard = () => {
     
     // Recent orders data
     const recentOrders = [
-      { id: 'ORD-001', customer: 'Nguyễn Văn A', date: '2023-07-28', amount: 850000, status: 'Đã giao hàng' },
-      { id: 'ORD-002', customer: 'Trần Thị B', date: '2023-07-27', amount: 1250000, status: 'Đang vận chuyển' },
-      { id: 'ORD-003', customer: 'Phạm Văn C', date: '2023-07-26', amount: 520000, status: 'Đang xử lý' },
-      { id: 'ORD-004', customer: 'Lê Thị D', date: '2023-07-25', amount: 780000, status: 'Đã giao hàng' },
-      { id: 'ORD-005', customer: 'Hoàng Văn E', date: '2023-07-24', amount: 1450000, status: 'Đã hủy' }
+      { id: 'ORD-001', customer: 'Nguyễn Văn A', date: '2023-07-28', amount: 850000, status: 'DELIVERED' },
+      { id: 'ORD-002', customer: 'Trần Thị B', date: '2023-07-27', amount: 1250000, status: 'SHIPPED' },
+      { id: 'ORD-003', customer: 'Phạm Văn C', date: '2023-07-26', amount: 520000, status: 'PROCESSING' },
+      { id: 'ORD-004', customer: 'Lê Thị D', date: '2023-07-25', amount: 780000, status: 'DELIVERED' },
+      { id: 'ORD-005', customer: 'Hoàng Văn E', date: '2023-07-24', amount: 1450000, status: 'CANCELLED' }
+    ];
+    
+    // Customer growth data
+    const customerGrowth = [
+      { name: 'T1', newCustomers: 30, activeCustomers: 120 },
+      { name: 'T2', newCustomers: 42, activeCustomers: 140 },
+      { name: 'T3', newCustomers: 38, activeCustomers: 160 },
+      { name: 'T4', newCustomers: 45, activeCustomers: 185 },
+      { name: 'T5', newCustomers: 50, activeCustomers: 210 },
+      { name: 'T6', newCustomers: 55, activeCustomers: 235 }
+    ];
+
+    const customerGrowthWeekly = [
+      { name: 'Tuần 1', newCustomers: 12, activeCustomers: 80 },
+      { name: 'Tuần 2', newCustomers: 15, activeCustomers: 85 },
+      { name: 'Tuần 3', newCustomers: 18, activeCustomers: 92 },
+      { name: 'Tuần 4', newCustomers: 10, activeCustomers: 88 }
     ];
     
     return {
@@ -74,24 +124,210 @@ const Dashboard = () => {
       weeklyRevenueData,
       productCategoriesData,
       topSellingProducts,
-      recentOrders
+      recentOrders,
+      customerData: {
+        customerGrowth,
+        customerGrowthWeekly,
+        totalCustomers: 1755,
+        activeCustomers: 1200,
+        newCustomersThisMonth: 55,
+        retentionRate: 85
+      }
     };
   };
   
   useEffect(() => {
-    // Simulate API call
     const fetchStats = async () => {
       try {
         setLoading(true);
-        // In a real application, this would be an API call
-        setTimeout(() => {
-          const mockData = generateMockData();
-          setStats(mockData);
-          setLoading(false);
-        }, 800);
-      } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
+        setError(null);
+        
+        // Khởi tạo đối tượng để lưu dữ liệu dashboard
+        let dashboardData = {
+          salesData: {
+            totalRevenue: 0,
+            totalOrders: 0,
+            averageOrderValue: 0,
+            pendingOrders: 0,
+            processingOrders: 0,
+            shippingOrders: 0,
+            completedOrders: 0,
+            canceledOrders: 0
+          },
+          monthlyRevenueData: [],
+          weeklyRevenueData: [],
+          productCategoriesData: [],
+          topSellingProducts: [],
+          recentOrders: [],
+          customerData: {
+            customerGrowth: [],
+            customerGrowthWeekly: [],
+            totalCustomers: 0,
+            activeCustomers: 0,
+            newCustomersThisMonth: 0,
+            retentionRate: 0
+          }
+        };
+        
+        // Mảng để lưu kết quả các Promise
+        const apiResults = {
+          ordersStats: null,
+          usersStats: null,
+          recentOrders: null,
+          products: null,
+          categories: null
+        };
+        
+        try {
+          // Gọi tất cả API cùng lúc
+          const [ordersStats, usersStats, recentOrders, products, categories] = await Promise.allSettled([
+            getOrdersStatistics(),
+            getUsersStatistics(),
+            getAllOrders({ limit: 5, sortBy: 'createdAt', direction: 'DESC' }),
+            getAllProducts(),
+            getAllCategories()
+          ]);
+          
+          // Kiểm tra và lưu kết quả của từng API
+          if (ordersStats.status === 'fulfilled') {
+            apiResults.ordersStats = ordersStats.value;
+          } else {
+            console.error("Error fetching order stats:", ordersStats.reason);
+          }
+          
+          if (usersStats.status === 'fulfilled') {
+            apiResults.usersStats = usersStats.value;
+          } else {
+            console.error("Error fetching user stats:", usersStats.reason);
+          }
+          
+          if (recentOrders.status === 'fulfilled') {
+            apiResults.recentOrders = recentOrders.value;
+          } else {
+            console.error("Error fetching recent orders:", recentOrders.reason);
+          }
+          
+          if (products.status === 'fulfilled') {
+            apiResults.products = products.value;
+          } else {
+            console.error("Error fetching products:", products.reason);
+          }
+          
+          if (categories.status === 'fulfilled') {
+            apiResults.categories = categories.value;
+          } else {
+            console.error("Error fetching categories:", categories.reason);
+          }
+          
+          // Xử lý dữ liệu thống kê đơn hàng
+          if (apiResults.ordersStats) {
+            dashboardData.salesData = {
+              totalRevenue: apiResults.ordersStats.totalRevenue || 0,
+              totalOrders: apiResults.ordersStats.totalOrders || 0,
+              averageOrderValue: apiResults.ordersStats.averageOrderValue || 0,
+              pendingOrders: apiResults.ordersStats.countByStatus?.PENDING || 0,
+              processingOrders: apiResults.ordersStats.countByStatus?.PROCESSING || 0,
+              shippingOrders: apiResults.ordersStats.countByStatus?.SHIPPED || 0,
+              completedOrders: apiResults.ordersStats.countByStatus?.DELIVERED || 0,
+              canceledOrders: apiResults.ordersStats.countByStatus?.CANCELLED || 0
+            };
+            
+            dashboardData.monthlyRevenueData = apiResults.ordersStats.revenueByMonth || [];
+            dashboardData.weeklyRevenueData = apiResults.ordersStats.revenueByWeek || [];
+          }
+          
+          // Xử lý dữ liệu thống kê người dùng
+          if (apiResults.usersStats) {
+            dashboardData.customerData = {
+              customerGrowth: apiResults.usersStats.customerGrowth || [],
+              customerGrowthWeekly: apiResults.usersStats.customerGrowthWeekly || [],
+              totalCustomers: apiResults.usersStats.summary?.totalCustomers || 0,
+              activeCustomers: apiResults.usersStats.summary?.activeCustomers || 0,
+              newCustomersThisMonth: apiResults.usersStats.summary?.newCustomersThisMonth || 0,
+              retentionRate: apiResults.usersStats.summary?.retentionRate || 0
+            };
+          }
+          
+          // Xử lý dữ liệu đơn hàng gần đây
+          if (apiResults.recentOrders && apiResults.recentOrders.length > 0) {
+            dashboardData.recentOrders = apiResults.recentOrders.map(order => ({
+              id: order.id,
+              customer: order.user ? order.user.username : 'Khách vãng lai',
+              date: new Date(order.createdAt).toISOString().split('T')[0],
+              amount: order.totalAmount,
+              status: order.status
+            }));
+          }
+          
+          // Xử lý dữ liệu danh mục sản phẩm
+          if (apiResults.products && apiResults.products.length > 0) {
+            // Tạo dữ liệu phân loại sản phẩm theo danh mục
+            const productsByCategory = {};
+            
+            // Đếm số lượng sản phẩm trong mỗi danh mục
+            apiResults.products.forEach(product => {
+              const categoryName = product.category ? product.category.name : 'Không phân loại';
+              
+              if (!productsByCategory[categoryName]) {
+                productsByCategory[categoryName] = 0;
+              }
+              
+              productsByCategory[categoryName]++;
+            });
+            
+            // Chuyển đổi dữ liệu danh mục thành định dạng cho biểu đồ
+            dashboardData.productCategoriesData = Object.entries(productsByCategory).map(([name, value]) => ({
+              name,
+              value
+            }));
+            
+            // Tìm top 5 sản phẩm bán chạy nhất
+            dashboardData.topSellingProducts = [...apiResults.products]
+              .sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
+              .slice(0, 5)
+              .map(product => ({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                sold: product.soldCount || 0,
+                image: product.img || 'https://via.placeholder.com/50'
+              }));
+          }
+          
+          // Kiểm tra nếu không có dữ liệu từ API, sử dụng dữ liệu mẫu
+          const hasRealData = apiResults.ordersStats || apiResults.usersStats || (apiResults.recentOrders && apiResults.recentOrders.length > 0);
+          
+          if (!hasRealData) {
+            console.log("No data available from API, using mock data");
+            dashboardData = generateMockData();
+          } else {
+            // Nếu thiếu một phần dữ liệu, sử dụng dữ liệu mẫu để bổ sung
+            const mockData = generateMockData();
+            
+            if (dashboardData.monthlyRevenueData.length === 0) dashboardData.monthlyRevenueData = mockData.monthlyRevenueData;
+            if (dashboardData.weeklyRevenueData.length === 0) dashboardData.weeklyRevenueData = mockData.weeklyRevenueData;
+            if (dashboardData.productCategoriesData.length === 0) dashboardData.productCategoriesData = mockData.productCategoriesData;
+            if (dashboardData.topSellingProducts.length === 0) dashboardData.topSellingProducts = mockData.topSellingProducts;
+            if (dashboardData.recentOrders.length === 0) dashboardData.recentOrders = mockData.recentOrders;
+            if (dashboardData.customerData.customerGrowth.length === 0) dashboardData.customerData.customerGrowth = mockData.customerData.customerGrowth;
+            if (dashboardData.customerData.customerGrowthWeekly.length === 0) dashboardData.customerData.customerGrowthWeekly = mockData.customerData.customerGrowthWeekly;
+          }
+          
+          setStats(dashboardData);
+          
+        } catch (error) {
+          console.error("Error fetching dashboard data:", error);
+          setError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+          
+          // Nếu có lỗi khi lấy dữ liệu, sử dụng dữ liệu mẫu
+          setStats(generateMockData());
+        }
+        
         setLoading(false);
+      } catch (error) {
+        console.error("Error in dashboard:", error);
+        setLoading(false);
+        setError("Đã xảy ra lỗi. Vui lòng thử lại sau.");
       }
     };
     
@@ -115,25 +351,51 @@ const Dashboard = () => {
     return period === 'month' ? stats.monthlyRevenueData : stats.weeklyRevenueData;
   };
   
+  // Get customer data based on selected period
+  const getCustomerData = () => {
+    if (!stats?.customerData) return [];
+    return period === 'month' ? stats.customerData.customerGrowth : stats.customerData.customerGrowthWeekly;
+  };
+  
   // Colors for charts
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
-  // Custom tooltip for revenue chart
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="custom-tooltip">
-          <p className="label">{`${label}`}</p>
-          <p className="desc">{`Doanh thu: ${formatCurrency(payload[0].value)}`}</p>
-          <p className="desc">{`Đơn hàng: ${payload[1].value}`}</p>
-        </div>
-      );
+  // Cập nhật hàm getStatusClass để phù hợp với enum từ backend
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'DELIVERED':
+        return 'delivered';
+      case 'SHIPPED':
+        return 'shipping';
+      case 'PENDING':
+      case 'PROCESSING':
+        return 'processing';
+      case 'CANCELLED':
+        return 'canceled';
+      default:
+        return '';
     }
-    return null;
+  };
+  
+  // Hàm dịch trạng thái sang tiếng Việt
+  const translateStatus = (status) => {
+    const statusTranslations = {
+      'PENDING': 'Đang xử lý',
+      'PROCESSING': 'Đang chuẩn bị',
+      'SHIPPED': 'Đang vận chuyển',
+      'DELIVERED': 'Đã giao hàng',
+      'CANCELLED': 'Đã hủy'
+    };
+    
+    return statusTranslations[status] || status;
   };
   
   if (loading) {
     return <div className="loading-container">Đang tải dữ liệu thống kê...</div>;
+  }
+  
+  if (error) {
+    return <div className="error-container">{error}</div>;
   }
   
   if (!stats) {
@@ -142,6 +404,25 @@ const Dashboard = () => {
   
   return (
     <div className="dashboard-container">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1>Thống kê bán hàng</h1>
+        <div className="period-selector">
+          <button 
+            className={`period-btn ${period === 'week' ? 'active' : ''}`}
+            onClick={() => setPeriod('week')}
+          >
+            Tuần
+          </button>
+          <button 
+            className={`period-btn ${period === 'month' ? 'active' : ''}`}
+            onClick={() => setPeriod('month')}
+          >
+            Tháng
+          </button>
+        </div>
+      </div>
+      
       {/* Stats Cards */}
       <div className="stats-cards">
         <div className="stats-card">
@@ -179,229 +460,160 @@ const Dashboard = () => {
             <i className="fa fa-clock"></i>
           </div>
           <div className="stats-content">
-            <h3>Đơn hàng đang chờ</h3>
-            <div className="stats-value">{stats.salesData.pendingOrders + stats.salesData.processingOrders}</div>
+            <h3>Đơn chờ xử lý</h3>
+            <div className="stats-value">{stats.salesData.pendingOrders}</div>
           </div>
         </div>
       </div>
       
-      {/* Charts Section */}
-      <div className="charts-section">
-        {/* Revenue Chart */}
-        <div className="chart-container revenue-chart">
-          <div className="chart-header">
-            <h2>Biểu đồ doanh thu</h2>
-            <div className="chart-controls">
-              <button 
-                className={`period-btn ${period === 'week' ? 'active' : ''}`}
-                onClick={() => setPeriod('week')}
-              >
-                Tuần
-              </button>
-              <button 
-                className={`period-btn ${period === 'month' ? 'active' : ''}`}
-                onClick={() => setPeriod('month')}
-              >
-                Tháng
-              </button>
-            </div>
+      {/* Customer Stats Cards */}
+      <div className="stats-cards">
+        <div className="stats-card">
+          <div className="stats-icon customers-icon">
+            <i className="fa fa-users"></i>
           </div>
-          <div className="chart-content">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={getChartData()}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar yAxisId="left" dataKey="revenue" name="Doanh thu" fill="#8884d8" />
-                <Bar yAxisId="right" dataKey="orders" name="Đơn hàng" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="stats-content">
+            <h3>Tổng khách hàng</h3>
+            <div className="stats-value">{stats.customerData?.totalCustomers || 0}</div>
           </div>
         </div>
         
-        {/* Product Categories Chart */}
-        <div className="chart-container categories-chart">
-          <div className="chart-header">
-            <h2>Danh mục sản phẩm</h2>
+        <div className="stats-card">
+          <div className="stats-icon active-icon">
+            <i className="fa fa-user-check"></i>
           </div>
-          <div className="chart-content">
-            <div className="pie-chart-container">
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={stats.productCategoriesData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {stats.productCategoriesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="categories-legend">
-              {stats.productCategoriesData.map((entry, index) => (
-                <div key={index} className="legend-item">
-                  <div className="color-indicator" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                  <div className="legend-text">{entry.name}: {entry.value}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Order Status Overview */}
-      <div className="order-status-overview">
-        <h2>Tổng quan trạng thái đơn hàng</h2>
-        <div className="status-bars">
-          <div className="status-item">
-            <div className="status-info">
-              <div className="status-label">Đang xử lý</div>
-              <div className="status-count">{stats.salesData.processingOrders}</div>
-            </div>
-            <div className="status-bar-bg">
-              <div 
-                className="status-bar processing"
-                style={{ width: `${(stats.salesData.processingOrders / stats.salesData.totalOrders) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          <div className="status-item">
-            <div className="status-info">
-              <div className="status-label">Đang vận chuyển</div>
-              <div className="status-count">{stats.salesData.shippingOrders}</div>
-            </div>
-            <div className="status-bar-bg">
-              <div 
-                className="status-bar shipping"
-                style={{ width: `${(stats.salesData.shippingOrders / stats.salesData.totalOrders) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          <div className="status-item">
-            <div className="status-info">
-              <div className="status-label">Đã giao hàng</div>
-              <div className="status-count">{stats.salesData.completedOrders}</div>
-            </div>
-            <div className="status-bar-bg">
-              <div 
-                className="status-bar completed"
-                style={{ width: `${(stats.salesData.completedOrders / stats.salesData.totalOrders) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          <div className="status-item">
-            <div className="status-info">
-              <div className="status-label">Đã hủy</div>
-              <div className="status-count">{stats.salesData.canceledOrders}</div>
-            </div>
-            <div className="status-bar-bg">
-              <div 
-                className="status-bar canceled"
-                style={{ width: `${(stats.salesData.canceledOrders / stats.salesData.totalOrders) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="detail-sections">
-        {/* Top Products Section */}
-        <div className="detail-section top-products">
-          <div className="section-header">
-            <h2>Sản phẩm bán chạy</h2>
-            <Link to="/admin/products" className="view-all">
-              Xem tất cả <i className="fa fa-arrow-right"></i>
-            </Link>
-          </div>
-          
-          <div className="product-list">
-            {stats.topSellingProducts.map((product, index) => (
-              <div key={index} className="product-item">
-                <div className="product-rank">{index + 1}</div>
-                <div className="product-image">
-                  <img src={product.image} alt={product.name} />
-                </div>
-                <div className="product-info">
-                  <div className="product-name">{product.name}</div>
-                  <div className="product-price">{formatCurrency(product.price)}</div>
-                </div>
-                <div className="product-sold">
-                  <span>{product.sold}</span> đã bán
-                </div>
-              </div>
-            ))}
+          <div className="stats-content">
+            <h3>Khách hàng hoạt động</h3>
+            <div className="stats-value">{stats.customerData?.activeCustomers || 0}</div>
           </div>
         </div>
         
-        {/* Recent Orders Section */}
-        <div className="detail-section recent-orders">
-          <div className="section-header">
-            <h2>Đơn hàng gần đây</h2>
-            <Link to="/admin/orders" className="view-all">
-              Xem tất cả <i className="fa fa-arrow-right"></i>
-            </Link>
+        <div className="stats-card">
+          <div className="stats-icon new-icon">
+            <i className="fa fa-user-plus"></i>
+          </div>
+          <div className="stats-content">
+            <h3>Khách hàng mới</h3>
+            <div className="stats-value">{stats.customerData?.newCustomersThisMonth || 0}</div>
+          </div>
+        </div>
+        
+        <div className="stats-card">
+          <div className="stats-icon retention-icon">
+            <i className="fa fa-redo-alt"></i>
+          </div>
+          <div className="stats-content">
+            <h3>Tỷ lệ giữ chân</h3>
+            <div className="stats-value">{stats.customerData?.retentionRate || 0}%</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Charts */}
+      <div className="charts-container">
+        <div className="chart-row">
+          <div className="chart-column">
+            <SalesChart 
+              data={getChartData()} 
+              period={period} 
+              formatCurrency={formatCurrency} 
+            />
           </div>
           
-          <div className="orders-list">
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn hàng</th>
-                  <th>Khách hàng</th>
-                  <th>Ngày đặt</th>
-                  <th>Tổng tiền</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.recentOrders.map((order, index) => (
-                  <tr key={index}>
-                    <td>
-                      <Link to={`/admin/orders/${order.id}`}>
-                        {order.id}
-                      </Link>
-                    </td>
-                    <td>{order.customer}</td>
-                    <td>{formatDate(order.date)}</td>
-                    <td>{formatCurrency(order.amount)}</td>
-                    <td>
-                      <span className={`status-badge ${
-                        order.status === 'Đã hủy' ? 'canceled' : 
-                        order.status === 'Đã giao hàng' ? 'delivered' : 
-                        order.status === 'Đang vận chuyển' ? 'shipping' : 'processing'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </td>
-                  </tr>
+          <div className="chart-column">
+            <CustomerGrowthChart 
+              data={getCustomerData()} 
+              period={period} 
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* Product Categories */}
+      <div className="categories-chart-section">
+        <div className="section-header">
+          <h2>Phân loại sản phẩm</h2>
+        </div>
+        
+        <div className="pie-chart-container">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={stats.productCategoriesData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={120}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              >
+                {stats.productCategoriesData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
       
+      {/* Products and Orders */}
+      <div className="tables-container">
+        <div className="table-column">
+          <TopProductsTable 
+            products={stats.topSellingProducts} 
+            formatCurrency={formatCurrency} 
+          />
+        </div>
+        
+        <div className="table-column">
+          <RecentOrdersTable 
+            orders={stats.recentOrders} 
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+            getStatusClass={getStatusClass}
+            translateStatus={translateStatus}
+          />
+        </div>
+      </div>
+
       <style jsx>{`
         .dashboard-container {
           padding: 20px;
+        }
+        
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        
+        .page-header h1 {
+          margin: 0;
+          font-size: 24px;
+          color: #333;
+        }
+        
+        .period-selector {
+          display: flex;
+          gap: 8px;
+        }
+        
+        .period-btn {
+          padding: 8px 16px;
+          background-color: #f8f9fa;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.3s;
+        }
+        
+        .period-btn.active {
+          background-color: #007bff;
+          color: white;
+          border-color: #007bff;
         }
         
         .loading-container, .error-container {
@@ -455,10 +667,26 @@ const Dashboard = () => {
         }
         
         .avg-icon {
-          background-color: #6f42c1;
+          background-color: #17a2b8;
         }
         
         .pending-icon {
+          background-color: #ffc107;
+        }
+        
+        .customers-icon {
+          background-color: #6f42c1;
+        }
+        
+        .active-icon {
+          background-color: #28a745;
+        }
+        
+        .new-icon {
+          background-color: #007bff;
+        }
+        
+        .retention-icon {
           background-color: #fd7e14;
         }
         
@@ -474,190 +702,31 @@ const Dashboard = () => {
           color: #333;
         }
         
-        /* Charts Section */
-        .charts-section {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 20px;
+        /* Charts */
+        .charts-container {
           margin-bottom: 24px;
         }
         
-        .chart-container {
-          background-color: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-          padding: A20px;
+        .chart-row {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+          gap: 20px;
         }
         
-        .chart-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 16px;
+        .chart-column {
+          flex: 1;
         }
         
-        .chart-header h2 {
-          margin: 0;
-          font-size: 18px;
-          color: #333;
-        }
-        
-        .chart-controls {
-          display: flex;
-          gap: 8px;
-        }
-        
-        .period-btn {
-          padding: 6px 12px;
-          background-color: #f8f9fa;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: all 0.3s;
-        }
-        
-        .period-btn.active {
-          background-color: #007bff;
-          color: white;
-          border-color: #007bff;
-        }
-        
-        .pie-chart-container {
-          height: 250px;
-        }
-        
-        .categories-legend {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 16px;
-          margin-top: 16px;
-        }
-        
-        .legend-item {
-          display: flex;
-          align-items: center;
-        }
-        
-        .color-indicator {
-          width: 16px;
-          height: 16px;
-          border-radius: 4px;
-          margin-right: A8px;
-        }
-        
-        .legend-text {
-          font-size: 14px;
-          color: #333;
-        }
-        
-        .custom-tooltip {
-          background-color: white;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          padding: 12px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .custom-tooltip .label {
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: #333;
-        }
-        
-        .custom-tooltip .desc {
-          color: #6c757d;
-          margin: 4px 0;
-        }
-        
-        /* Order Status Overview */
-        .order-status-overview {
+        /* Categories Chart */
+        .categories-chart-section {
           background-color: white;
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.08);
           padding: 20px;
           margin-bottom: 24px;
-        }
-        
-        .order-status-overview h2 {
-          margin: 0 0 16px 0;
-          font-size: 18px;
-          color: #333;
-        }
-        
-        .status-bars {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 20px;
-        }
-        
-        .status-item {
-          margin-bottom: 16px;
-        }
-        
-        .status-info {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-        }
-        
-        .status-label {
-          font-size: 14px;
-          color: #6c757d;
-        }
-        
-        .status-count {
-          font-weight: 600;
-          color: #333;
-        }
-        
-        .status-bar-bg {
-          background-color: #e9ecef;
-          border-radius: 4px;
-          height: 8px;
-          overflow: hidden;
-        }
-        
-        .status-bar {
-          height: 100%;
-          border-radius: 4px;
-        }
-        
-        .status-bar.processing {
-          background-color: #ffc107;
-        }
-        
-        .status-bar.shipping {
-          background-color: #17a2b8;
-        }
-        
-        .status-bar.completed {
-          background-color: #28a745;
-        }
-        
-        .status-bar.canceled {
-          background-color: #dc3545;
-        }
-        
-        /* Detail Sections */
-        .detail-sections {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-          gap: 20px;
-        }
-        
-        .detail-section {
-          background-color: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-          padding: 20px;
         }
         
         .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
           margin-bottom: 16px;
         }
         
@@ -667,149 +736,23 @@ const Dashboard = () => {
           color: #333;
         }
         
-        .view-all {
-          font-size: 14px;
-          color: #007bff;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
+        .pie-chart-container {
+          height: 300px;
         }
         
-        .view-all i {
-          margin-left: 4px;
-          font-size: 12px;
+        /* Tables */
+        .tables-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+          gap: 20px;
         }
         
-        /* Product List */
-        .product-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        
-        .product-item {
-          display: flex;
-          align-items: center;
-          padding: 12px;
-          border-radius: 4px;
-          transition: background-color 0.3s;
-        }
-        
-        .product-item:hover {
-          background-color: #f8f9fa;
-        }
-        
-        .product-rank {
-          font-size: 18px;
-          font-weight: 600;
-          width: 24px;
-          text-align: center;
-          color: #333;
-        }
-        
-        .product-image {
-          margin: 0 16px;
-        }
-        
-        .product-image img {
-          width: 40px;
-          height: 40px;
-          object-fit: cover;
-          border-radius: 4px;
-        }
-        
-        .product-info {
+        .table-column {
           flex: 1;
         }
         
-        .product-name {
-          font-weight: 500;
-          color: #333;
-          margin-bottom: 4px;
-        }
-        
-        .product-price {
-          font-size: 14px;
-          color: #6c757d;
-        }
-        
-        .product-sold {
-          font-size: 14px;
-          color: #6c757d;
-        }
-        
-        .product-sold span {
-          font-weight: 600;
-          color: #28a745;
-        }
-        
-        /* Orders Table */
-        .orders-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        
-        .orders-table th,
-        .orders-table td {
-          padding: 12px 16px;
-          text-align: left;
-          border-bottom: 1px solid #e9ecef;
-        }
-        
-        .orders-table th {
-          font-weight: 600;
-          color: #495057;
-        }
-        
-        .orders-table a {
-          color: #007bff;
-          text-decoration: none;
-          font-weight: 500;
-        }
-        
-        .status-badge {
-          display: inline-block;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        
-        .status-badge.delivered {
-          background-color: #d4edda;
-          color: #155724;
-        }
-        
-        .status-badge.processing {
-          background-color: #fff3cd;
-          color: #856404;
-        }
-        
-        .status-badge.shipping {
-          background-color: #cce5ff;
-          color: #004085;
-        }
-        
-        .status-badge.canceled {
-          background-color: #f8d7da;
-          color: #721c24;
-        }
-        
-        @media (max-width: 1200px) {
-          .charts-section {
-            grid-template-columns: 1fr;
-          }
-          
-          .categories-chart {
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .categories-legend {
-            margin-top: 0;
-          }
-          
-          .detail-sections {
+        @media (max-width: 992px) {
+          .chart-row, .tables-container {
             grid-template-columns: 1fr;
           }
         }

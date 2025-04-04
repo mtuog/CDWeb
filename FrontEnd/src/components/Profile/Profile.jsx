@@ -1,58 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import { BACKEND_URL_HTTP } from '../config.js';
 
 const Profile = () => {
-    const [loggedIn, setLoggedIn] = useState(false);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const { id } = useParams(); 
- 
+    const { id } = useParams();
+
     useEffect(() => {
-        fetch('/session')
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.loggedIn) {
-                    fetch(`/user/${id}`)
-                        .then((response) => response.json())
-                        .then((userData) => {
-                            setUser(userData);
-                            setLoading(false);
-                        })
-                        .catch((error) => {
-                            console.error('Error fetching user data:', error);
-                            setLoading(false);
-                            navigate('/login');
-                        });
-                } else {
+        // Kiểm tra đăng nhập từ localStorage
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        
+        console.log("Profile component - Token:", token);
+        console.log("Profile component - UserId from localStorage:", userId);
+        console.log("Profile component - UserId from params:", id);
+        
+        if (!token) {
+            // Nếu không có token, chuyển về trang đăng nhập
+            navigate('/login');
+            return;
+        }
+        
+        // Lấy thông tin user từ backend
+        const fetchUserProfile = async () => {
+            try {
+                // Kiểm tra xem ID trong URL có trùng với ID đăng nhập không
+                if (id !== userId) {
+                    console.log("User ID mismatch - Accessing another user's profile");
+                    // Tùy chọn: cho phép xem profile người khác hoặc redirect về profile của mình
+                    // navigate(`/profile/${userId}`);
+                    // return;
+                }
+                
+                // Gọi API để lấy thông tin user
+                const response = await axios.get(`http://${BACKEND_URL_HTTP}/api/UserServices/user/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log("API Response:", response.data);
+                
+                if (response.status === 200) {
+                    setUser(response.data);
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+                setLoading(false);
+                
+                // Nếu token hết hạn hoặc không hợp lệ
+                if (error.response?.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userRole');
                     navigate('/login');
                 }
-            })
-            .catch((error) => {
-                console.error('Error fetching session data:', error);
-                navigate('/login');
-            });
+            }
+        };
+        
+        fetchUserProfile();
     }, [id, navigate]);
 
     const handleLogout = () => {
-        fetch('/logout', {
-            method: 'POST',
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.message === 'Đăng xuất thành công') {
-                    setLoggedIn(false);
-                    window.location.reload(); // Cách đơn giản để cập nhật giao diện
-                }
-            });
+        // Xóa thông tin đăng nhập
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userRole');
+        
+        // Kích hoạt sự kiện cập nhật trạng thái đăng nhập
+        window.dispatchEvent(new Event('auth-change'));
+        
+        // Chuyển hướng về trang chủ
+        navigate('/');
     };
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Đang tải...</span>
+                </div>
+            </div>
+        );
     }
 
     if (!user) {
-        return <div>User not found</div>;
+        return (
+            <div className="container mt-5">
+                <div className="alert alert-warning" role="alert">
+                    Không tìm thấy thông tin người dùng. <a href="/login" className="alert-link">Đăng nhập</a> để tiếp tục.
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -78,7 +125,7 @@ const Profile = () => {
       className="img-fluid my-5" 
       style={{ width: '80px' }} 
     />
-                                        <h5 style={{ color: '#758694' }}>{user.username}</h5>
+                                        <h5 style={{ color: '#758694' }}>{user.username || user.userName}</h5>
                                         <a href="/changePassword"><button style={{ backgroundColor: '#FFD18E'}} className="button1"> Đổi Mật Khẩu </button></a> 
                                         <button style={{ backgroundColor: '#E9FF97'}} className="button1" onClick={handleLogout}> Đăng xuất </button>
 
@@ -95,33 +142,28 @@ const Profile = () => {
                                                 </div>
                                                 <div className="col-6 mb-3">
                                                     <h6>Ngày Sinh</h6>
-                                                    <p className="text-muted">{user.dob}</p>
+                                                    <p className="text-muted">{user.dob || user.dateOfBirth || 'Chưa cập nhật'}</p>
                                                 </div>
                                                 <div className="col-6 mb-3">
                                                     <h6>Địa Chỉ</h6>
-                                                    <p className="text-muted">{user.address}</p>
+                                                    <p className="text-muted">{user.address || 'Chưa cập nhật'}</p>
                                                 </div>
                                                 <div className="col-6 mb-3">
                                                     <h6>Giới Tính</h6>
-                                                    {user.gender === '1' ? 'Nam' : user.gender === '2' ? 'Nữ' : 'Giới Tính Khác'}
+                                                    <p className="text-muted">
+                                                        {user.gender === '1' || user.gender === 1 ? 'Nam' : 
+                                                         user.gender === '2' || user.gender === 2 ? 'Nữ' : 'Khác'}
+                                                    </p>
                                                 </div>
                                                 <div className="col-6 mb-3">
                                                     <h6>Số Điện Thoại</h6>
-                                                    <p className="text-muted">{user.phoneNumber}</p>
+                                                    <p className="text-muted">{user.phoneNumber || user.phone || 'Chưa cập nhật'}</p>
+                                                </div>
+                                                <div className="col-6 mb-3">
+                                                    <h6>Vai trò</h6>
+                                                    <p className="text-muted">{user.role || 'Người dùng'}</p>
                                                 </div>
                                             </div>
-                                            {/* <h6>Projects</h6>
-                                            <hr className="mt-0 mb-4" />
-                                            <div className="row pt-1">
-                                                <div className="col-6 mb-3">
-                                                    <h6>Recent</h6>
-                                                    <p className="text-muted">Lorem ipsum</p>
-                                                </div>
-                                                <div className="col-6 mb-3">
-                                                    <h6>Most Viewed</h6>
-                                                    <p className="text-muted">Dolor sit amet</p>
-                                                </div>
-                                            </div> */}
 
                                             <div className="d-flex justify-content-start">
                                                 <a href="#!"><i className="fab fa-facebook-f fa-lg me-3"></i></a>
@@ -141,3 +183,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

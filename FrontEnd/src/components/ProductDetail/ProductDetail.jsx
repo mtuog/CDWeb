@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../../store/Actions';
 import { findProductSizesById, findProductColorsById } from '../../sizeColorHelpers';
 import { getProductById } from '../../api/productApi';
+import Swal from 'sweetalert2';
 
 const ProductDetail = () => {
 	const { id } = useParams();
@@ -94,12 +95,22 @@ const ProductDetail = () => {
 
 	const handleAddToCart = () => {
 		if (!selectedSize) {
-			alert('Vui lòng chọn kích thước');
+			Swal.fire({
+				icon: 'warning',
+				title: 'Chọn kích thước',
+				text: 'Vui lòng chọn kích thước phù hợp',
+				confirmButtonColor: '#e65540'
+			});
 			return;
 		}
 		
 		if (!selectedColor) {
-			alert('Vui lòng chọn màu sắc');
+			Swal.fire({
+				icon: 'warning',
+				title: 'Chọn màu sắc',
+				text: 'Vui lòng chọn màu sắc phù hợp',
+				confirmButtonColor: '#e65540'
+			});
 			return;
 		}
 		
@@ -112,8 +123,41 @@ const ProductDetail = () => {
 			color: selectedColor
 		}));
 		
-		// Show success message
-		alert('Đã thêm sản phẩm vào giỏ hàng');
+		// Hiển thị thông báo thành công kèm animation
+		Swal.fire({
+			title: 'Đã thêm vào giỏ hàng',
+			text: `${product.name} (${selectedSize}, ${selectedColor})`,
+			icon: 'success',
+			showConfirmButton: true,
+			confirmButtonText: 'Xem giỏ hàng',
+			confirmButtonColor: '#e65540',
+			showCancelButton: true,
+			cancelButtonText: 'Tiếp tục mua sắm',
+			cancelButtonColor: '#717fe0',
+			timer: 3000,
+			timerProgressBar: true,
+			position: 'center',
+			showClass: {
+				popup: 'animate__animated animate__fadeInDown'
+			},
+			hideClass: {
+				popup: 'animate__animated animate__fadeOutUp'
+			},
+			didOpen: (toast) => {
+				// Thêm hiệu ứng nhấp nháy vào icon giỏ hàng
+				const cartIcon = document.querySelector('.icon-header-item.cl2.hov-cl1.trans-04.p-l-22.p-r-11.icon-header-noti');
+				if (cartIcon) {
+					cartIcon.classList.add('shake');
+					setTimeout(() => {
+						cartIcon.classList.remove('shake');
+					}, 1000);
+				}
+			}
+		}).then((result) => {
+			if (result.isConfirmed) {
+				window.location.href = '/shoppingCart';
+			}
+		});
 		
 		setQuantity(1); // Reset quantity after adding to cart
 	};

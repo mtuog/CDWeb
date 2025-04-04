@@ -16,15 +16,64 @@ const Header = () => {
 
 	useEffect(() => {
 		// Thay thế fetch('/session') bằng kiểm tra localStorage
-		const token = localStorage.getItem('token');
-		const userName = localStorage.getItem('userName');
-		const userId = localStorage.getItem('userId');
+		const checkLoginStatus = () => {
+			const token = localStorage.getItem('token');
+			const userName = localStorage.getItem('userName');
+			const userId = localStorage.getItem('userId');
+			
+			console.log("Login check - UserId:", userId);
+			
+			if (token && userName) {
+				setLoggedIn(true);
+				setUsername(userName);
+				setId(userId);
+			} else {
+				setLoggedIn(false);
+				setUsername('');
+				setId('');
+			}
+		};
+
+		// Kiểm tra khi component mount
+		checkLoginStatus();
+
+		// Kiểm tra mỗi khi có thay đổi trong localStorage
+		window.addEventListener('storage', checkLoginStatus);
+
+		// Kiểm tra mỗi khi user quay lại tab
+		window.addEventListener('focus', checkLoginStatus);
+
+		// Cleanup listeners
+		return () => {
+			window.removeEventListener('storage', checkLoginStatus);
+			window.removeEventListener('focus', checkLoginStatus);
+		};
+	}, []);
+
+	// Tạo event để components khác có thể thông báo đăng nhập/đăng xuất
+	useEffect(() => {
+		// Tạo custom event để cập nhật header khi đăng nhập/đăng xuất
+		const handleAuthChange = () => {
+			const token = localStorage.getItem('token');
+			const userName = localStorage.getItem('userName');
+			const userId = localStorage.getItem('userId');
+			
+			if (token && userName) {
+				setLoggedIn(true);
+				setUsername(userName);
+				setId(userId);
+			} else {
+				setLoggedIn(false);
+				setUsername('');
+				setId('');
+			}
+		};
+
+		window.addEventListener('auth-change', handleAuthChange);
 		
-		if (token && userName) {
-			setLoggedIn(true);
-			setUsername(userName);
-			setId(userId);
-		}
+		return () => {
+			window.removeEventListener('auth-change', handleAuthChange);
+		};
 	}, []);
 
 	const handleLogout = () => {
@@ -40,6 +89,9 @@ const Header = () => {
 		setUsername('');
 		setId('');
 		setUserDropdownOpen(false);
+		
+		// Trigger event để cập nhật header
+		window.dispatchEvent(new Event('auth-change'));
 		
 		// Chuyển hướng về trang chủ
 		navigate('/');
@@ -144,6 +196,19 @@ const Header = () => {
 									style={{ cursor: 'pointer' }}
 								>
 									<i className="zmdi zmdi-account"></i>
+									{loggedIn && (
+										<span style={{ 
+											fontSize: '12px',
+											backgroundColor: '#4CAF50',
+											color: 'white',
+											borderRadius: '50%',
+											width: '8px',
+											height: '8px',
+											position: 'absolute',
+											top: '0',
+											right: '5px'
+										}}></span>
+									)}
 								</div>
 								{userDropdownOpen && (
 									<div className="user-dropdown-menu" style={{
@@ -159,27 +224,51 @@ const Header = () => {
 									}}>
 										{loggedIn ? (
 											<>
-												<a 
-													href={`/profile/${id}`} 
+												<div style={{
+													padding: '8px 15px',
+													borderBottom: '1px solid #eee',
+													fontWeight: 'bold',
+													color: '#333',
+													fontSize: '14px'
+												}}>
+													Xin chào, {username}
+												</div>
+												<div 
 													style={{
 														display: 'block',
 														padding: '8px 15px',
 														color: '#333',
 														textDecoration: 'none',
-														fontSize: '14px'
+														fontSize: '14px',
+														cursor: 'pointer'
 													}}
-													onClick={() => setUserDropdownOpen(false)}
+													onClick={() => {
+														setUserDropdownOpen(false);
+														console.log("Navigating to profile with ID:", id);
+														if (id) {
+															navigate(`/profile/${id}`);
+														} else {
+															// Thử lấy lại ID từ localStorage nếu biến state không có
+															const userId = localStorage.getItem('userId');
+															console.log("Fetched userId from localStorage:", userId);
+															if (userId) {
+																navigate(`/profile/${userId}`);
+															} else {
+																navigate('/login');
+															}
+														}
+													}}
 												>
 													<i className="zmdi zmdi-account mr-2"></i> Hồ sơ
-												</a>
-												<a 
-													href="#" 
+												</div>
+												<div 
 													style={{
 														display: 'block',
 														padding: '8px 15px',
 														color: '#333',
 														textDecoration: 'none',
-														fontSize: '14px'
+														fontSize: '14px',
+														cursor: 'pointer'
 													}}
 													onClick={(e) => {
 														e.preventDefault();
@@ -187,36 +276,42 @@ const Header = () => {
 													}}
 												>
 													<i className="zmdi zmdi-power mr-2"></i> Đăng xuất
-												</a>
+												</div>
 											</>
 										) : (
 											<>
-												<a 
-													href="/login" 
+												<div 
 													style={{
 														display: 'block',
 														padding: '8px 15px',
 														color: '#333',
 														textDecoration: 'none',
-														fontSize: '14px'
+														fontSize: '14px',
+														cursor: 'pointer'
 													}}
-													onClick={() => setUserDropdownOpen(false)}
+													onClick={() => {
+														setUserDropdownOpen(false);
+														navigate('/login');
+													}}
 												>
 													<i className="zmdi zmdi-account-circle mr-2"></i> Đăng nhập
-												</a>
-												<a 
-													href="/register" 
+												</div>
+												<div 
 													style={{
 														display: 'block',
 														padding: '8px 15px',
 														color: '#333',
 														textDecoration: 'none',
-														fontSize: '14px'
+														fontSize: '14px',
+														cursor: 'pointer'
 													}}
-													onClick={() => setUserDropdownOpen(false)}
+													onClick={() => {
+														setUserDropdownOpen(false);
+														navigate('/register');
+													}}
 												>
 													<i className="zmdi zmdi-account-add mr-2"></i> Đăng ký
-												</a>
+												</div>
 											</>
 										)}
 									</div>
@@ -282,13 +377,53 @@ const Header = () => {
 						<>
 							{loggedIn ? (
 								<>
-									<li><a href={`/profile/${id}`}>Hồ sơ</a></li>
-									<li><a href="#" onClick={(e) => {e.preventDefault(); handleLogout();}}>Đăng xuất</a></li>
+									<li><div 
+										style={{cursor: 'pointer', padding: '10px 20px'}}
+										onClick={() => {
+											setUserDropdownOpen(false);
+											console.log("Navigating to profile with ID:", id);
+											if (id) {
+												navigate(`/profile/${id}`);
+											} else {
+												// Thử lấy lại ID từ localStorage nếu biến state không có
+												const userId = localStorage.getItem('userId');
+												console.log("Fetched userId from localStorage:", userId);
+												if (userId) {
+													navigate(`/profile/${userId}`);
+												} else {
+													navigate('/login');
+												}
+											}
+										}}>
+										<i className="zmdi zmdi-account mr-2"></i> Hồ sơ
+									</div></li>
+									<li><div 
+										style={{cursor: 'pointer', padding: '10px 20px'}}
+										onClick={(e) => {
+											e.preventDefault();
+											handleLogout();
+										}}>
+										<i className="zmdi zmdi-power mr-2"></i> Đăng xuất
+									</div></li>
 								</>
 							) : (
 								<>
-									<li><a href="/login">Đăng nhập</a></li>
-									<li><a href="/register">Đăng ký</a></li>
+									<li><div 
+										style={{cursor: 'pointer', padding: '10px 20px'}}
+										onClick={() => {
+											setUserDropdownOpen(false);
+											navigate('/login');
+										}}>
+										<i className="zmdi zmdi-account-circle mr-2"></i> Đăng nhập
+									</div></li>
+									<li><div 
+										style={{cursor: 'pointer', padding: '10px 20px'}}
+										onClick={() => {
+											setUserDropdownOpen(false);
+											navigate('/register');
+										}}>
+										<i className="zmdi zmdi-account-add mr-2"></i> Đăng ký
+									</div></li>
 								</>
 							)}
 						</>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllProducts } from '../../../api/productApi';
+import { getAllCategories } from '../../../api/categoryApi';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,24 +15,28 @@ const ProductList = () => {
   
   const productsPerPage = 10;
   
-  // Mock categories - trong thực tế sẽ lấy từ API
-  const categories = ['Áo nam', 'Áo nữ', 'Quần nam', 'Quần nữ', 'Váy', 'Giày'];
-  
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await getAllProducts();
-        setProducts(data);
+        
+        // Fetch products
+        const productsData = await getAllProducts();
+        setProducts(productsData);
+        
+        // Fetch categories
+        const categoriesData = await getAllCategories();
+        setCategories(categoriesData);
+        
         setLoading(false);
       } catch (error) {
-        setError("Không thể tải danh sách sản phẩm. Vui lòng thử lại sau.");
+        setError("Không thể tải dữ liệu. Vui lòng thử lại sau.");
         setLoading(false);
-        console.error("Error fetching products:", error);
+        console.error("Error fetching data:", error);
       }
     };
     
-    fetchProducts();
+    fetchData();
   }, []);
   
   // Filter and sort products
@@ -129,8 +135,8 @@ const ProductList = () => {
         <div className="category-filter">
           <select value={selectedCategory} onChange={handleCategoryChange}>
             <option value="">Tất cả danh mục</option>
-            {categories.map((category, index) => (
-              <option key={index} value={category}>{category}</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.name}>{category.name}</option>
             ))}
           </select>
         </div>

@@ -6,11 +6,11 @@ import './Product.css';
 import './Slider.css';
 import { remove as removeDiacritics } from 'diacritics';
 import { getAllProducts } from '../../api/productApi';
+import { getAllCategories } from '../../api/categoryApi';
 
-// Function to extract unique categories
-const getCategories = (products) => {
-	const categories = products.map(product => product.category?.name || 'Uncategorized');
-	return ['All Products', ...new Set(categories)];
+// Function to format categories for display
+const formatCategories = (categories) => {
+	return ['All Products', ...categories.map(cat => cat.name)];
 };
 
 const Product = () => {
@@ -28,23 +28,28 @@ const Product = () => {
 
 	const navigate = useNavigate();
 
-	// Fetch products from API
+	// Fetch products and categories from API
 	useEffect(() => {
-		const fetchProducts = async () => {
+		const fetchData = async () => {
 			try {
 				setLoading(true);
-				const data = await getAllProducts();
-				setProducts(data);
-				setCategories(getCategories(data));
+				// Fetch products
+				const productsData = await getAllProducts();
+				setProducts(productsData);
+				
+				// Fetch categories from API
+				const categoriesData = await getAllCategories();
+				setCategories(formatCategories(categoriesData));
+				
 				setLoading(false);
 			} catch (error) {
-				setError("Không thể tải sản phẩm. Vui lòng thử lại sau.");
+				setError("Không thể tải dữ liệu. Vui lòng thử lại sau.");
 				setLoading(false);
-				console.error("Error fetching products:", error);
+				console.error("Error fetching data:", error);
 			}
 		};
 
-		fetchProducts();
+		fetchData();
 	}, []);
 
 	const handleSort = (order) => {
