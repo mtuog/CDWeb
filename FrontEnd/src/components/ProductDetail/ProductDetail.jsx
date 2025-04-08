@@ -1,10 +1,12 @@
 // src/components/ProductDetail.js
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../../store/Actions';
 import { findProductSizesById, findProductColorsById } from '../../sizeColorHelpers';
 import { getProductById } from '../../api/productApi';
+import { BACKEND_URL_HTTP } from '../config.js';
+import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const ProductDetail = () => {
@@ -13,11 +15,13 @@ const ProductDetail = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const dispatch = useDispatch();
+	const navigate = useNavigate();
 	const cart = useSelector(state => state.cart);
 	const [quantity, setQuantity] = useState(1);
 	const [selectedSize, setSelectedSize] = useState('');
 	const [selectedColor, setSelectedColor] = useState('');
 	const [showZoom, setShowZoom] = useState(false);
+	const [isInWishlist, setIsInWishlist] = useState(false);
 	
 	// Fetch product details from API
 	useEffect(() => {
@@ -27,6 +31,9 @@ const ProductDetail = () => {
 				const data = await getProductById(parseInt(id));
 				setProduct(data);
 				setLoading(false);
+				
+				// Kiểm tra xem sản phẩm có trong wishlist không
+				checkWishlistStatus(parseInt(id));
 			} catch (error) {
 				setError("Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.");
 				setLoading(false);
@@ -36,6 +43,141 @@ const ProductDetail = () => {
 
 		fetchProductDetails();
 	}, [id]);
+	
+	// Kiểm tra trạng thái wishlist
+	const checkWishlistStatus = async (productId) => {
+		const token = localStorage.getItem('token');
+		const userId = localStorage.getItem('userId');
+		
+		if (!token || !userId) return;
+		
+		try {
+			console.log("Checking wishlist status for product:", productId, "and user:", userId);
+			
+			const response = await axios.get(
+				`http://${BACKEND_URL_HTTP}/api/wishlist/check?userId=${userId}&productId=${productId}`,
+				{
+					headers: {
+						'Authorization': `Bearer ${token}`
+					}
+				}
+			);
+			
+			console.log("Wishlist check response:", response.data);
+			
+			if (response.status === 200) {
+				setIsInWishlist(response.data);
+			}
+		} catch (error) {
+			console.error('Error checking wishlist status:', error);
+			console.error('Error details:', error.response?.data || error.message);
+		}
+	};
+	
+	// Add to wishlist
+	const handleAddToWishlist = async (e) => {
+		if (e) e.preventDefault(); // Ngăn chặn hành vi mặc định của thẻ a
+		
+		const token = localStorage.getItem('token');
+		const userId = localStorage.getItem('userId');
+		
+		console.log("Token available:", !!token);
+		console.log("UserId:", userId);
+		
+		if (!token || !userId) {
+			// Người dùng chưa đăng nhập
+			Swal.fire({
+				title: 'Yêu cầu đăng nhập',
+				text: 'Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích',
+				icon: 'info',
+				showCancelButton: true,
+				confirmButtonText: 'Đăng nhập ngay',
+				cancelButtonText: 'Để sau',
+				confirmButtonColor: '#e65540'
+			}).then((result) => {
+				if (result.isConfirmed) {
+					navigate('/login');
+				}
+			});
+			return;
+		}
+		
+		try {
+			console.log("Calling wishlist API with method:", isInWishlist ? "DELETE" : "POST");
+			console.log("Token being sent:", token.substring(0, 10) + "...");
+			console.log("UserId being used:", userId);
+			let response;
+			
+			if (isInWishlist) {
+				// Xóa khỏi wishlist
+				response = await axios.delete(
+					`http://${BACKEND_URL_HTTP}/api/wishlist/remove/${product.id}?userId=${userId}`,
+					{
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						}
+					}
+				);
+				
+				if (response.status === 200) {
+					setIsInWishlist(false);
+					Swal.fire({
+						title: 'Đã xóa',
+						text: 'Sản phẩm đã được xóa khỏi danh sách yêu thích',
+						icon: 'success',
+						timer: 1500,
+						showConfirmButton: false
+					});
+				}
+			} else {
+				// Thêm vào wishlist
+				console.log("Sending request to add to wishlist:", {
+					productId: product.id,
+					userId: parseInt(userId),
+					endpoint: `http://${BACKEND_URL_HTTP}/api/wishlist/add`
+				});
+				
+				response = await axios.post(
+					`http://${BACKEND_URL_HTTP}/api/wishlist/add`,
+					{
+						productId: product.id,
+						userId: parseInt(userId)
+					},
+					{
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						},
+						withCredentials: true
+					}
+				);
+				
+				if (response.status === 200 || response.status === 201) {
+					setIsInWishlist(true);
+					Swal.fire({
+						title: 'Đã thêm',
+						text: 'Sản phẩm đã được thêm vào danh sách yêu thích',
+						icon: 'success',
+						timer: 1500,
+						showConfirmButton: false
+					});
+				}
+			}
+			
+			console.log("API response:", response);
+		} catch (error) {
+			console.error('Error updating wishlist:', error);
+			console.error('Error details:', error.response?.data || error.message);
+			
+			Swal.fire({
+				title: 'Lỗi',
+				text: 'Không thể cập nhật danh sách yêu thích. Vui lòng thử lại sau.',
+				icon: 'error',
+				confirmButtonText: 'Đóng'
+			});
+		}
+	};
 	
 	// Get available sizes and colors for this product
 	const availableSizes = findProductSizesById(parseInt(id));
@@ -316,9 +458,19 @@ const ProductDetail = () => {
 								</div>
 								<div className="flex-w flex-m p-l-100 p-t-40 respon7">
 									<div className="flex-m bor9 p-r-10 m-r-11">
-										<a href="#" className="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 js-addwish-detail tooltip100" data-tooltip="Add to Wishlist">
-											<i className="zmdi zmdi-favorite"></i>
-										</a>
+										<button 
+											onClick={handleAddToWishlist} 
+											className="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 js-addwish-detail tooltip100"
+											data-tooltip={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+											style={{ 
+												cursor: 'pointer',
+												background: 'transparent',
+												border: 'none',
+												padding: '0.5rem'
+											}}
+										>
+											<i className={`zmdi zmdi-favorite${isInWishlist ? '' : '-outline'}`} style={{ color: isInWishlist ? '#e65540' : '' }}></i>
+										</button>
 									</div>
 									<a href="#" className="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 m-r-8 tooltip100" data-tooltip="Facebook">
 										<i className="fa fa-facebook"></i>

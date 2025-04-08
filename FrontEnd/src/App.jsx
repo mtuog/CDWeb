@@ -66,7 +66,7 @@ const router = createBrowserRouter([
             { path: 'register', element: <Register /> },
             { path: 'login', element: <Login /> },
             { path: 'changePassword', element: <ChangePassword /> },
-            { path: 'profile/:id', element: <Profile /> },
+            { path: 'account', element: <Profile /> },
             { path: 'search', element: <SearchResults /> }, 
             { path: 'camera', element: <Camera /> }, 
             { path: 'video', element: <CameraApp /> }, 

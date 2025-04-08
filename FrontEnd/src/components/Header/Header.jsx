@@ -8,7 +8,6 @@ const Header = () => {
 	const [username, setUsername] = useState('');
 	const [id, setId] = useState('');
 	const [searchTerm, setSearchTerm] = useState('');
-	const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
@@ -88,22 +87,12 @@ const Header = () => {
 		setLoggedIn(false);
 		setUsername('');
 		setId('');
-		setUserDropdownOpen(false);
 		
 		// Trigger event để cập nhật header
 		window.dispatchEvent(new Event('auth-change'));
 		
 		// Chuyển hướng về trang chủ
 		navigate('/');
-	};
-
-	const toggleUserDropdown = () => {
-		setUserDropdownOpen(!userDropdownOpen);
-	};
-
-	const handleClearCart = () => {
-		dispatch(clearCartLocalStorage());
-		localStorage.removeItem('cart');
 	};
 
 	const handleSearchChange = (event) => {
@@ -120,6 +109,11 @@ const Header = () => {
 		navigate(`/search?query=${searchTerm}`);
 	};
 
+	const handleClearCart = () => {
+		dispatch(clearCartLocalStorage());
+		localStorage.removeItem('cart');
+	};
+
 	return (
 		<header className="header-v4">
 			<div className="container-menu-desktop">
@@ -132,9 +126,21 @@ const Header = () => {
 							<a href="/home" className="flex-c-m trans-04 p-lr-25">
 								Trợ giúp và câu hỏi thường gặp
 							</a>
-							<a href={loggedIn ? `/profile/${id}` : '/login'} className="flex-c-m trans-04 p-lr-25">
-								{username ? <span>{username}</span> : <span>Tài Khoản Của Tôi</span>}
-							</a>
+							
+							{loggedIn ? (
+								<a href="/account" className="flex-c-m trans-04 p-lr-25" style={{
+									maxWidth: '150px',
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									whiteSpace: 'nowrap'
+								}}>
+									<span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{username}</span>
+								</a>
+							) : (
+								<a href="/login" className="flex-c-m trans-04 p-lr-25">
+									<span>Đăng nhập</span>
+								</a>
+							)}
 			
 							<a href="/home" className="flex-c-m trans-04 p-lr-25">
 								EN
@@ -189,134 +195,45 @@ const Header = () => {
 									aria-label="Search products"
 								/>
 							</div>
-							<div className="user-dropdown-container" style={{ position: 'relative', marginLeft: '15px' }}>
+							{loggedIn ? (
 								<div 
-									className="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11" 
-									onClick={toggleUserDropdown}
-									style={{ cursor: 'pointer' }}
+									style={{ 
+										display: 'flex', 
+										alignItems: 'center', 
+										marginLeft: '15px',
+										cursor: 'pointer',
+										maxWidth: '150px',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap'
+									}}
+									onClick={() => navigate('/account')}
 								>
-									<i className="zmdi zmdi-account"></i>
-									{loggedIn && (
-										<span style={{ 
-											fontSize: '12px',
-											backgroundColor: '#4CAF50',
-											color: 'white',
-											borderRadius: '50%',
-											width: '8px',
-											height: '8px',
-											position: 'absolute',
-											top: '0',
-											right: '5px'
-										}}></span>
-									)}
+									<i className="zmdi zmdi-account" style={{ marginRight: '8px', flexShrink: 0 }}></i>
+									<span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{username}</span>
+									
+									<i 
+										className="zmdi zmdi-power" 
+										style={{ marginLeft: '10px', fontSize: '16px', color: '#666', flexShrink: 0 }}
+										onClick={(e) => {
+											e.stopPropagation();
+											handleLogout();
+										}}
+									></i>
 								</div>
-								{userDropdownOpen && (
-									<div className="user-dropdown-menu" style={{
-										position: 'absolute',
-										top: '40px',
-										right: '0',
-										backgroundColor: 'white',
-										boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-										borderRadius: '5px',
-										padding: '5px 0',
-										zIndex: 1000,
-										minWidth: '150px'
-									}}>
-										{loggedIn ? (
-											<>
-												<div style={{
-													padding: '8px 15px',
-													borderBottom: '1px solid #eee',
-													fontWeight: 'bold',
-													color: '#333',
-													fontSize: '14px'
-												}}>
-													Xin chào, {username}
-												</div>
-												<div 
-													style={{
-														display: 'block',
-														padding: '8px 15px',
-														color: '#333',
-														textDecoration: 'none',
-														fontSize: '14px',
-														cursor: 'pointer'
-													}}
-													onClick={() => {
-														setUserDropdownOpen(false);
-														console.log("Navigating to profile with ID:", id);
-														if (id) {
-															navigate(`/profile/${id}`);
-														} else {
-															// Thử lấy lại ID từ localStorage nếu biến state không có
-															const userId = localStorage.getItem('userId');
-															console.log("Fetched userId from localStorage:", userId);
-															if (userId) {
-																navigate(`/profile/${userId}`);
-															} else {
-																navigate('/login');
-															}
-														}
-													}}
-												>
-													<i className="zmdi zmdi-account mr-2"></i> Hồ sơ
-												</div>
-												<div 
-													style={{
-														display: 'block',
-														padding: '8px 15px',
-														color: '#333',
-														textDecoration: 'none',
-														fontSize: '14px',
-														cursor: 'pointer'
-													}}
-													onClick={(e) => {
-														e.preventDefault();
-														handleLogout();
-													}}
-												>
-													<i className="zmdi zmdi-power mr-2"></i> Đăng xuất
-												</div>
-											</>
-										) : (
-											<>
-												<div 
-													style={{
-														display: 'block',
-														padding: '8px 15px',
-														color: '#333',
-														textDecoration: 'none',
-														fontSize: '14px',
-														cursor: 'pointer'
-													}}
-													onClick={() => {
-														setUserDropdownOpen(false);
-														navigate('/login');
-													}}
-												>
-													<i className="zmdi zmdi-account-circle mr-2"></i> Đăng nhập
-												</div>
-												<div 
-													style={{
-														display: 'block',
-														padding: '8px 15px',
-														color: '#333',
-														textDecoration: 'none',
-														fontSize: '14px',
-														cursor: 'pointer'
-													}}
-													onClick={() => {
-														setUserDropdownOpen(false);
-														navigate('/register');
-													}}
-												>
-													<i className="zmdi zmdi-account-add mr-2"></i> Đăng ký
-												</div>
-											</>
-										)}
-									</div>
-								)}
-							</div>
+							) : (
+								<div 
+									style={{ 
+										display: 'flex', 
+										alignItems: 'center', 
+										marginLeft: '15px',
+										cursor: 'pointer' 
+									}}
+									onClick={() => navigate('/login')}
+								>
+									<i className="zmdi zmdi-account" style={{ marginRight: '8px' }}></i>
+									<span>Đăng nhập</span>
+								</div>
+							)}
 						</div>
 					</nav>
 				</div>
@@ -337,7 +254,7 @@ const Header = () => {
 					</a>
 					<div 
 						className="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11" 
-						onClick={toggleUserDropdown}
+						onClick={() => navigate('/login')}
 					>
 						<i className="zmdi zmdi-account"></i>
 					</div>
@@ -357,10 +274,22 @@ const Header = () => {
 					<li>
 						<div className="right-top-bar flex-w h-full">
 							<a href="/home" className="flex-c-m p-lr-10 trans-04">Help & FAQs</a>
-							<a href={loggedIn ? `/profile/${id}` : '/login'} className="flex-c-m p-lr-10 trans-04">
-								{username ? <span>{username}</span> : <span>Tài Khoản Của Tôi</span>}
-							</a>
-						
+							
+							{loggedIn ? (
+								<a href="/account" className="flex-c-m p-lr-10 trans-04" style={{
+									maxWidth: '150px',
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									whiteSpace: 'nowrap'
+								}}>
+									<span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{username}</span>
+								</a>
+							) : (
+								<a href="/login" className="flex-c-m p-lr-10 trans-04">
+									<span>Đăng nhập</span>
+								</a>
+							)}
+							
 							<a href="/home" className="flex-c-m p-lr-10 trans-04">EN</a>
 							<a href="/home" className="flex-c-m p-lr-10 trans-04">VNĐ</a>
 						</div>
@@ -368,83 +297,42 @@ const Header = () => {
 				</ul>
 				<ul className="main-menu-m">
 					<li><a href="/home">Trang Chủ</a></li>
-					<li><a href="/product">
-					Cửa hàng</a></li>
+					<li><a href="/product">Cửa hàng</a></li>
 					<li><a href="/shoppingCart" className="label1 rs1" data-label1="hot">Giỏ hàng</a></li>
 					<li><a href="/aboutUs">Giới Thiệu</a></li>
 					<li><a href="/contact">Liên Hệ</a></li>
-					{userDropdownOpen && (
+					
+					{loggedIn ? (
 						<>
-							{loggedIn ? (
-								<>
-									<li><div 
-										style={{cursor: 'pointer', padding: '10px 20px'}}
-										onClick={() => {
-											setUserDropdownOpen(false);
-											console.log("Navigating to profile with ID:", id);
-											if (id) {
-												navigate(`/profile/${id}`);
-											} else {
-												// Thử lấy lại ID từ localStorage nếu biến state không có
-												const userId = localStorage.getItem('userId');
-												console.log("Fetched userId from localStorage:", userId);
-												if (userId) {
-													navigate(`/profile/${userId}`);
-												} else {
-													navigate('/login');
-												}
-											}
-										}}>
-										<i className="zmdi zmdi-account mr-2"></i> Hồ sơ
-									</div></li>
-									<li><div 
-										style={{cursor: 'pointer', padding: '10px 20px'}}
-										onClick={(e) => {
-											e.preventDefault();
-											handleLogout();
-										}}>
-										<i className="zmdi zmdi-power mr-2"></i> Đăng xuất
-									</div></li>
-								</>
-							) : (
-								<>
-									<li><div 
-										style={{cursor: 'pointer', padding: '10px 20px'}}
-										onClick={() => {
-											setUserDropdownOpen(false);
-											navigate('/login');
-										}}>
-										<i className="zmdi zmdi-account-circle mr-2"></i> Đăng nhập
-									</div></li>
-									<li><div 
-										style={{cursor: 'pointer', padding: '10px 20px'}}
-										onClick={() => {
-											setUserDropdownOpen(false);
-											navigate('/register');
-										}}>
-										<i className="zmdi zmdi-account-add mr-2"></i> Đăng ký
-									</div></li>
-								</>
-							)}
+							<li><div 
+								style={{cursor: 'pointer', padding: '10px 20px'}}
+								onClick={() => navigate('/account')}
+							>
+								<i className="zmdi zmdi-account mr-2"></i> Hồ sơ
+							</div></li>
+							<li><div 
+								style={{cursor: 'pointer', padding: '10px 20px'}}
+								onClick={(e) => {
+									e.preventDefault();
+									handleLogout();
+								}}>
+								<i className="zmdi zmdi-power mr-2"></i> Đăng xuất
+							</div></li>
+						</>
+					) : (
+						<>
+							<li><div 
+								style={{cursor: 'pointer', padding: '10px 20px'}}
+								onClick={() => navigate('/login')}>
+								<i className="zmdi zmdi-account-circle mr-2"></i> Đăng nhập
+							</div></li>
 						</>
 					)}
 				</ul>
 			</div>
-			{userDropdownOpen && (
-				<div 
-					style={{
-						position: 'fixed',
-						top: 0,
-						left: 0,
-						right: 0,
-						bottom: 0,
-						zIndex: 99
-					}}
-					onClick={toggleUserDropdown}
-				/>
-			)}
 		</header>
 	);
 };
 
 export default Header;
+

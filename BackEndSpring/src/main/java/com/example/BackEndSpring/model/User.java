@@ -80,6 +80,15 @@ public class User {
     @Column(name = "otp_expiry_time")
     private LocalDateTime otpExpiryTime;
     
+    @Column(name = "avatar")
+    private String avatar;
+    
+    @Column(name = "provider")
+    private String provider;
+    
+    @Column(name = "provider_id")
+    private String providerId;
+    
     // Constructors
     public User() {
     }
@@ -226,5 +235,29 @@ public class User {
     
     public void setOtpExpiryTime(LocalDateTime otpExpiryTime) {
         this.otpExpiryTime = otpExpiryTime;
+    }
+    
+    public String getAvatar() {
+        return avatar;
+    }
+    
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+    
+    public String getProvider() {
+        return provider;
+    }
+    
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+    
+    public String getProviderId() {
+        return providerId;
+    }
+    
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 } 

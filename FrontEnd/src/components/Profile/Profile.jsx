@@ -1,72 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BACKEND_URL_HTTP } from '../config.js';
+import './Profile.css';
+
+// Import các tab components
+import ProfileInfo from './tabs/ProfileInfo';
+import OrderHistory from './tabs/OrderHistory';
+import AddressBook from './tabs/AddressBook';
+import ChangePassword from './tabs/ChangePassword';
+import LoyaltyPoints from './tabs/LoyaltyPoints';
+import Wishlist from './tabs/Wishlist';
+import Reviews from './tabs/Reviews';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-    const { id } = useParams();
-
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('profile');
+    
     useEffect(() => {
-        // Kiểm tra đăng nhập từ localStorage
         const token = localStorage.getItem('token');
         const userId = localStorage.getItem('userId');
         
-        console.log("Profile component - Token:", token);
-        console.log("Profile component - UserId from localStorage:", userId);
-        console.log("Profile component - UserId from params:", id);
-        
-        if (!token) {
-            // Nếu không có token, chuyển về trang đăng nhập
+        if (!token || !userId) {
             navigate('/login');
             return;
         }
         
-        // Lấy thông tin user từ backend
-        const fetchUserProfile = async () => {
-            try {
-                // Kiểm tra xem ID trong URL có trùng với ID đăng nhập không
-                if (id !== userId) {
-                    console.log("User ID mismatch - Accessing another user's profile");
-                    // Tùy chọn: cho phép xem profile người khác hoặc redirect về profile của mình
-                    // navigate(`/profile/${userId}`);
-                    // return;
-                }
-                
-                // Gọi API để lấy thông tin user
-                const response = await axios.get(`http://${BACKEND_URL_HTTP}/api/UserServices/user/${id}`, {
+        fetchUserProfile(token, userId);
+    }, [navigate]);
+    
+    const fetchUserProfile = async (token, userId) => {
+        try {
+            setLoading(true);
+            
+            const response = await axios.get(
+                `http://${BACKEND_URL_HTTP}/api/UserServices/user/${userId}`,
+                {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
-                });
-                
-                console.log("API Response:", response.data);
-                
-                if (response.status === 200) {
-                    setUser(response.data);
-                    setLoading(false);
                 }
-            } catch (error) {
-                console.error('Error fetching user profile:', error);
-                setLoading(false);
-                
-                // Nếu token hết hạn hoặc không hợp lệ
-                if (error.response?.status === 401) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('refreshToken');
-                    localStorage.removeItem('userId');
-                    localStorage.removeItem('userName');
-                    localStorage.removeItem('userRole');
-                    navigate('/login');
-                }
+            );
+            
+            if (response.status === 200) {
+                setUser(response.data);
+                console.log("Đã tải thông tin user:", response.data);
             }
-        };
-        
-        fetchUserProfile();
-    }, [id, navigate]);
-
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            
+            if (error.response && error.response.status === 401) {
+                // Token hết hạn hoặc không hợp lệ
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userRole');
+                navigate('/login');
+            } else {
+                setError('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+    
     const handleLogout = () => {
         // Xóa thông tin đăng nhập
         localStorage.removeItem('token');
@@ -81,106 +82,175 @@ const Profile = () => {
         // Chuyển hướng về trang chủ
         navigate('/');
     };
-
+    
+    const renderTabContent = () => {
+        if (!user) return null;
+        
+        switch (activeTab) {
+            case 'profile':
+                return <ProfileInfo user={user} setUser={setUser} />;
+            case 'orders':
+                return <OrderHistory user={user} />;
+            case 'addresses':
+                return <AddressBook user={user} />;
+            case 'password':
+                return <ChangePassword user={user} />;
+            case 'points':
+                return <LoyaltyPoints user={user} />;
+            case 'wishlist':
+                return <Wishlist user={user} />;
+            case 'reviews':
+                return <Reviews user={user} />;
+            default:
+                return <ProfileInfo user={user} setUser={setUser} />;
+        }
+    };
+    
     if (loading) {
         return (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Đang tải...</span>
+            <div className="container py-5">
+                <div className="text-center my-5">
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p className="mt-3">Đang tải thông tin người dùng...</p>
                 </div>
             </div>
         );
     }
-
+    
+    if (error) {
+        return (
+            <div className="container py-5">
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                </div>
+            </div>
+        );
+    }
+    
     if (!user) {
         return (
-            <div className="container mt-5">
-                <div className="alert alert-warning" role="alert">
-                    Không tìm thấy thông tin người dùng. <a href="/login" className="alert-link">Đăng nhập</a> để tiếp tục.
+            <div className="container py-5">
+                <div className="text-center my-5">
+                    <div className="alert alert-warning" role="alert">
+                        Vui lòng đăng nhập để xem thông tin tài khoản.
+                    </div>
+                    <button 
+                        className="btn btn-primary"
+                        onClick={() => navigate('/login')}
+                    >
+                        Đăng nhập ngay
+                    </button>
                 </div>
             </div>
         );
     }
-
+    
     return (
-        <div>
-            <section className="vh-100" style={{ backgroundColor: '#f4f5f7' }}>
-                <div className="container py-5 h-100">
-                    <div className="row d-flex justify-content-center align-items-center h-100">
-                        <div className="col col-lg-6 mb-4 mb-lg-0">
-                            <div className="card mb-3" style={{ borderRadius: '.5rem' }}>
-                                <div className="row g-0">
-                                    <div className="col-md-4 gradient-custom text-center text-white"
-                                        style={{ borderTopLeftRadius: '.5rem', borderBottomLeftRadius: '.5rem' }}>
-                                            
-                                            <img 
-      src={
-        user.gender === '1' 
-          ? 'https://startbootstrap.github.io/startbootstrap-freelancer/assets/img/avataaars.svg'
-          : user.gender === '2' 
-          ? 'https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava1-bg.webp' 
-          : 'https://storage.timviec365.vn/timviec365/pictures/images/lgbt-la-gi(2).jpg' 
-      }
-      alt="Avatar" 
-      className="img-fluid my-5" 
-      style={{ width: '80px' }} 
-    />
-                                        <h5 style={{ color: '#758694' }}>{user.username || user.userName}</h5>
-                                        <a href="/changePassword"><button style={{ backgroundColor: '#FFD18E'}} className="button1"> Đổi Mật Khẩu </button></a> 
-                                        <button style={{ backgroundColor: '#E9FF97'}} className="button1" onClick={handleLogout}> Đăng xuất </button>
-
+        <div className="profile-container container py-5">
+            <div className="row">
+                <div className="col-lg-3">
+                    <div className="profile-sidebar mb-4">
+                        <div className="text-center mb-4">
+                            <div className="profile-userpic mx-auto">
+                                {user.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt={user.fullName || user.username} />
+                                ) : (
+                                    <div className="profile-userpic-default">
+                                        {(user.fullName || user.username || 'User').charAt(0).toUpperCase()}
                                     </div>
-                                    
-                                    <div className="col-md-8">
-                                        <div className="card-body p-4">
-                                            <h6>Thông Tin</h6>
-                                            <hr className="mt-0 mb-4" />
-                                            <div className="row pt-1">
-                                                <div className="col-6 mb-3">
-                                                    <h6>Email</h6>
-                                                    <p className="text-muted">{user.email}</p>
-                                                </div>
-                                                <div className="col-6 mb-3">
-                                                    <h6>Ngày Sinh</h6>
-                                                    <p className="text-muted">{user.dob || user.dateOfBirth || 'Chưa cập nhật'}</p>
-                                                </div>
-                                                <div className="col-6 mb-3">
-                                                    <h6>Địa Chỉ</h6>
-                                                    <p className="text-muted">{user.address || 'Chưa cập nhật'}</p>
-                                                </div>
-                                                <div className="col-6 mb-3">
-                                                    <h6>Giới Tính</h6>
-                                                    <p className="text-muted">
-                                                        {user.gender === '1' || user.gender === 1 ? 'Nam' : 
-                                                         user.gender === '2' || user.gender === 2 ? 'Nữ' : 'Khác'}
-                                                    </p>
-                                                </div>
-                                                <div className="col-6 mb-3">
-                                                    <h6>Số Điện Thoại</h6>
-                                                    <p className="text-muted">{user.phoneNumber || user.phone || 'Chưa cập nhật'}</p>
-                                                </div>
-                                                <div className="col-6 mb-3">
-                                                    <h6>Vai trò</h6>
-                                                    <p className="text-muted">{user.role || 'Người dùng'}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="d-flex justify-content-start">
-                                                <a href="#!"><i className="fab fa-facebook-f fa-lg me-3"></i></a>
-                                                <a href="#!"><i className="fab fa-twitter fa-lg me-3"></i></a>
-                                                <a href="#!"><i className="fab fa-instagram fa-lg"></i></a>
-                                            </div>
-                                        </div>
-                                    </div>
+                                )}
+                            </div>
+                            <div className="profile-usertitle mt-3">
+                                <div className="profile-usertitle-name">
+                                    {user.fullName || user.username}
+                                </div>
+                                <div className="profile-usertitle-email">
+                                    {user.email}
                                 </div>
                             </div>
                         </div>
+                        
+                        <div className="profile-usermenu">
+                            <ul className="nav flex-column">
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('profile')}
+                                    >
+                                        <i className="fa fa-user"></i> Thông tin cá nhân
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'orders' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('orders')}
+                                    >
+                                        <i className="fa fa-shopping-bag"></i> Đơn hàng của tôi
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'addresses' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('addresses')}
+                                    >
+                                        <i className="fa fa-map-marker-alt"></i> Sổ địa chỉ
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'wishlist' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('wishlist')}
+                                    >
+                                        <i className="fa fa-heart"></i> Sản phẩm yêu thích
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('reviews')}
+                                    >
+                                        <i className="fa fa-star"></i> Đánh giá sản phẩm
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'points' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('points')}
+                                    >
+                                        <i className="fa fa-award"></i> Điểm tích lũy
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'password' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('password')}
+                                    >
+                                        <i className="fa fa-lock"></i> Đổi mật khẩu
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button 
+                                        className="nav-link text-danger"
+                                        onClick={handleLogout}
+                                    >
+                                        <i className="fa fa-sign-out-alt"></i> Đăng xuất
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </section>
+                
+                <div className="col-lg-9">
+                    <div className="profile-content">
+                        {renderTabContent()}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
 
-export default Profile;
-
+export default Profile; 

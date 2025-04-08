@@ -401,4 +401,38 @@ public class UserService {
         }
         return sb.toString();
     }
+
+    /**
+     * Tạo người dùng từ đăng nhập mạng xã hội (Facebook, Google) không cần xác thực OTP
+     * 
+     * @param user Đối tượng User với thông tin từ mạng xã hội
+     * @return User đã được lưu vào database
+     */
+    @Transactional
+    public User createUserFromSocialLogin(User user) {
+        try {
+            // Validate user
+            if (userRepository.existsByUsername(user.getUsername())) {
+                throw new RuntimeException("Username already exists");
+            }
+            if (userRepository.existsByEmail(user.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+            
+            // Set up user data if not set
+            if (user.getCreatedAt() == null) {
+                user.setCreatedAt(LocalDateTime.now());
+            }
+            
+            // Đảm bảo user đã được xác thực
+            user.setVerified(true);
+            
+            // Lưu user vào database
+            User savedUser = userRepository.save(user);
+            
+            return savedUser;
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating user from social login: " + e.getMessage(), e);
+        }
+    }
 } 

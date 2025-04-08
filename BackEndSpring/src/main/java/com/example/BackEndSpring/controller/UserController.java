@@ -10,6 +10,7 @@ import com.example.BackEndSpring.model.ResendVerificationRequest;
 import com.example.BackEndSpring.model.PasswordResetRequest;
 import com.example.BackEndSpring.model.ChangePasswordRequest;
 import com.example.BackEndSpring.service.UserService;
+import com.example.BackEndSpring.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -54,6 +55,9 @@ public class UserController {
     // Temporary storage for tokens (in production, use a database or Redis)
     private Map<String, String> tokens = new HashMap<>();
     private Map<String, String> refreshTokens = new HashMap<>();
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     public UserController(UserService userService) {
@@ -542,12 +546,11 @@ public class UserController {
     
     // Helper methods for token generation
     private String generateToken(User user) {
-        String token = UUID.randomUUID().toString();
-        tokens.put(token, user.getId().toString());
-        return token;
+        return jwtUtil.generateToken(user);
     }
     
     private String generateRefreshToken(User user) {
+        // Có thể giữ nguyên UUID cho refresh token
         String refreshToken = UUID.randomUUID().toString();
         refreshTokens.put(refreshToken, user.getId().toString());
         return refreshToken;
