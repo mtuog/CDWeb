@@ -1,32 +1,258 @@
 // src/components/ProductDetail.js
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../../store/Actions';
-import { products } from '../../data/ProductDataFE';
 import { findProductSizesById, findProductColorsById } from '../../sizeColorHelpers';
+import { getProductById } from '../../api/productApi';
+import { BACKEND_URL_HTTP } from '../config.js';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const ProductDetail = () => {
 	const { id } = useParams();
-	const product = products.find(p => p.id === parseInt(id));
+	const [product, setProduct] = useState(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 	const dispatch = useDispatch();
+	const navigate = useNavigate();
 	const cart = useSelector(state => state.cart);
 	const [quantity, setQuantity] = useState(1);
 	const [selectedSize, setSelectedSize] = useState('');
 	const [selectedColor, setSelectedColor] = useState('');
+	const [showZoom, setShowZoom] = useState(false);
+	const [isInWishlist, setIsInWishlist] = useState(false);
+	
+	// Fetch product details from API
+	useEffect(() => {
+		const fetchProductDetails = async () => {
+			try {
+				setLoading(true);
+				const data = await getProductById(parseInt(id));
+				setProduct(data);
+				setLoading(false);
+				
+				// Kiểm tra xem sản phẩm có trong wishlist không
+				checkWishlistStatus(parseInt(id));
+			} catch (error) {
+				setError("Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.");
+				setLoading(false);
+				console.error("Error fetching product details:", error);
+			}
+		};
+
+		fetchProductDetails();
+	}, [id]);
+	
+	// Kiểm tra trạng thái wishlist
+	const checkWishlistStatus = async (productId) => {
+		const token = localStorage.getItem('token');
+		const userId = localStorage.getItem('userId');
+		
+		if (!token || !userId) return;
+		
+		try {
+			console.log("Checking wishlist status for product:", productId, "and user:", userId);
+			
+			const response = await axios.get(
+				`http://${BACKEND_URL_HTTP}/api/wishlist/check?userId=${userId}&productId=${productId}`,
+				{
+					headers: {
+						'Authorization': `Bearer ${token}`
+					}
+				}
+			);
+			
+			console.log("Wishlist check response:", response.data);
+			
+			if (response.status === 200) {
+				setIsInWishlist(response.data);
+			}
+		} catch (error) {
+			console.error('Error checking wishlist status:', error);
+			console.error('Error details:', error.response?.data || error.message);
+		}
+	};
+	
+	// Add to wishlist
+	const handleAddToWishlist = async (e) => {
+		if (e) e.preventDefault(); // Ngăn chặn hành vi mặc định của thẻ a
+		
+		const token = localStorage.getItem('token');
+		const userId = localStorage.getItem('userId');
+		
+		console.log("Token available:", !!token);
+		console.log("UserId:", userId);
+		
+		if (!token || !userId) {
+			// Người dùng chưa đăng nhập
+			Swal.fire({
+				title: 'Yêu cầu đăng nhập',
+				text: 'Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích',
+				icon: 'info',
+				showCancelButton: true,
+				confirmButtonText: 'Đăng nhập ngay',
+				cancelButtonText: 'Để sau',
+				confirmButtonColor: '#e65540'
+			}).then((result) => {
+				if (result.isConfirmed) {
+					navigate('/login');
+				}
+			});
+			return;
+		}
+		
+		try {
+			console.log("Calling wishlist API with method:", isInWishlist ? "DELETE" : "POST");
+			console.log("Token being sent:", token.substring(0, 10) + "...");
+			console.log("UserId being used:", userId);
+			let response;
+			
+			if (isInWishlist) {
+				// Xóa khỏi wishlist
+				response = await axios.delete(
+					`http://${BACKEND_URL_HTTP}/api/wishlist/remove/${product.id}?userId=${userId}`,
+					{
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						}
+					}
+				);
+				
+				if (response.status === 200) {
+					setIsInWishlist(false);
+					Swal.fire({
+						title: 'Đã xóa',
+						text: 'Sản phẩm đã được xóa khỏi danh sách yêu thích',
+						icon: 'success',
+						timer: 1500,
+						showConfirmButton: false
+					});
+				}
+			} else {
+				// Thêm vào wishlist
+				console.log("Sending request to add to wishlist:", {
+					productId: product.id,
+					userId: parseInt(userId),
+					endpoint: `http://${BACKEND_URL_HTTP}/api/wishlist/add`
+				});
+				
+				response = await axios.post(
+					`http://${BACKEND_URL_HTTP}/api/wishlist/add`,
+					{
+						productId: product.id,
+						userId: parseInt(userId)
+					},
+					{
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						},
+						withCredentials: true
+					}
+				);
+				
+				if (response.status === 200 || response.status === 201) {
+					setIsInWishlist(true);
+					Swal.fire({
+						title: 'Đã thêm',
+						text: 'Sản phẩm đã được thêm vào danh sách yêu thích',
+						icon: 'success',
+						timer: 1500,
+						showConfirmButton: false
+					});
+				}
+			}
+			
+			console.log("API response:", response);
+		} catch (error) {
+			console.error('Error updating wishlist:', error);
+			console.error('Error details:', error.response?.data || error.message);
+			
+			Swal.fire({
+				title: 'Lỗi',
+				text: 'Không thể cập nhật danh sách yêu thích. Vui lòng thử lại sau.',
+				icon: 'error',
+				confirmButtonText: 'Đóng'
+			});
+		}
+	};
 	
 	// Get available sizes and colors for this product
 	const availableSizes = findProductSizesById(parseInt(id));
 	const availableColors = findProductColorsById(parseInt(id));
 
+	// Toggle zoom image modal and control header visibility
+	const toggleZoom = () => {
+		const newZoomState = !showZoom;
+		setShowZoom(newZoomState);
+		
+		// Get the header element and toggle its visibility
+		const header = document.querySelector('header');
+		if (header) {
+			if (newZoomState) {
+				// Hide header when zoom is shown
+				header.style.display = 'none';
+				// Also lock body scrolling
+				document.body.style.overflow = 'hidden';
+			} else {
+				// Show header when zoom is closed
+				header.style.display = '';
+				// Restore body scrolling
+				document.body.style.overflow = '';
+			}
+		}
+	};
+
+	// Close modal when clicking outside image
+	const handleCloseZoom = (e) => {
+		if (e.target.classList.contains('zoom-modal')) {
+			toggleZoom(); // Use toggleZoom to ensure header visibility is also toggled
+		}
+	};
+
+	// Close modal with ESC key
+	useEffect(() => {
+		const handleEsc = (e) => {
+			if (e.keyCode === 27 && showZoom) {
+				toggleZoom(); // Use toggleZoom to ensure header visibility is also toggled
+			}
+		};
+		window.addEventListener('keydown', handleEsc);
+		
+		// Cleanup function
+		return () => {
+			window.removeEventListener('keydown', handleEsc);
+			// Ensure header is visible when component unmounts if it was hidden
+			if (showZoom) {
+				const header = document.querySelector('header');
+				if (header) {
+					header.style.display = '';
+				}
+				document.body.style.overflow = '';
+			}
+		};
+	}, [showZoom]);
+
 	const handleAddToCart = () => {
 		if (!selectedSize) {
-			alert('Vui lòng chọn kích thước');
+			Swal.fire({
+				icon: 'warning',
+				title: 'Chọn kích thước',
+				text: 'Vui lòng chọn kích thước phù hợp',
+				confirmButtonColor: '#e65540'
+			});
 			return;
 		}
 		
 		if (!selectedColor) {
-			alert('Vui lòng chọn màu sắc');
+			Swal.fire({
+				icon: 'warning',
+				title: 'Chọn màu sắc',
+				text: 'Vui lòng chọn màu sắc phù hợp',
+				confirmButtonColor: '#e65540'
+			});
 			return;
 		}
 		
@@ -39,11 +265,59 @@ const ProductDetail = () => {
 			color: selectedColor
 		}));
 		
-		// Show success message
-		alert('Đã thêm sản phẩm vào giỏ hàng');
+		// Hiển thị thông báo thành công kèm animation
+		Swal.fire({
+			title: 'Đã thêm vào giỏ hàng',
+			text: `${product.name} (${selectedSize}, ${selectedColor})`,
+			icon: 'success',
+			showConfirmButton: true,
+			confirmButtonText: 'Xem giỏ hàng',
+			confirmButtonColor: '#e65540',
+			showCancelButton: true,
+			cancelButtonText: 'Tiếp tục mua sắm',
+			cancelButtonColor: '#717fe0',
+			timer: 3000,
+			timerProgressBar: true,
+			position: 'center',
+			showClass: {
+				popup: 'animate__animated animate__fadeInDown'
+			},
+			hideClass: {
+				popup: 'animate__animated animate__fadeOutUp'
+			},
+			didOpen: (toast) => {
+				// Thêm hiệu ứng nhấp nháy vào icon giỏ hàng
+				const cartIcon = document.querySelector('.icon-header-item.cl2.hov-cl1.trans-04.p-l-22.p-r-11.icon-header-noti');
+				if (cartIcon) {
+					cartIcon.classList.add('shake');
+					setTimeout(() => {
+						cartIcon.classList.remove('shake');
+					}, 1000);
+				}
+			}
+		}).then((result) => {
+			if (result.isConfirmed) {
+				window.location.href = '/shoppingCart';
+			}
+		});
 		
 		setQuantity(1); // Reset quantity after adding to cart
 	};
+
+	// Show loading state
+	if (loading) {
+		return <div className="container text-center p-t-80 p-b-80">Loading product details...</div>;
+	}
+
+	// Show error state
+	if (error) {
+		return <div className="container text-center p-t-80 p-b-80">{error}</div>;
+	}
+
+	// Show "product not found" state
+	if (!product) {
+		return <div className="container text-center p-t-80 p-b-80">Product not found</div>;
+	}
 
 	return (
 		<div>
@@ -53,8 +327,22 @@ const ProductDetail = () => {
 						<div className="col-md-6 col-lg-7 p-b-30">
 							<div className="p-l-25 p-r-30 p-lr-0-lg">
 								<div className="wrap-pic-w pos-relative">
-									<img src={process.env.PUBLIC_URL + product.img} alt="IMG-PRODUCT" />
-									<a className="flex-c-m size-108 how-pos1 bor0 fs-16 cl10 bg0 hov-btn3 trans-04" href={process.env.PUBLIC_URL + product.img}>
+									<img 
+										src={product.img} 
+										alt={product.name} 
+										style={{ 
+											height: '600px', 
+											width: '100%', 
+											objectFit: 'contain',
+											cursor: 'pointer' 
+										}} 
+										onClick={toggleZoom}
+									/>
+									<a 
+										className="flex-c-m size-108 how-pos1 bor0 fs-16 cl10 bg0 hov-btn3 trans-04" 
+										onClick={toggleZoom}
+										style={{ cursor: 'pointer' }}
+									>
 										<i className="fa fa-expand"></i>
 									</a>
 								</div>
@@ -73,6 +361,20 @@ const ProductDetail = () => {
 									{product.des}
 								</p>
 								<div className="p-t-33">
+									{/* Category */}
+									<div className="flex-w flex-r-m p-b-10">
+										<div className="size-203 flex-c-m respon6">
+											Danh mục
+										</div>
+										<div className="size-204 respon6-next">
+											<div className="rs1-select2 bor8 bg0">
+												<div className="category-display">
+													{typeof product.category === 'object' ? product.category.name : product.category || 'Uncategorized'}
+												</div>
+											</div>
+										</div>
+									</div>
+
 									{/* Size Selection */}
 									<div className="flex-w flex-r-m p-b-10">
 										<div className="size-203 flex-c-m respon6">
@@ -102,7 +404,7 @@ const ProductDetail = () => {
 										<div className="size-204 respon6-next">
 											<div className="rs1-select2 bor8 bg0">
 												<select 
-													className="form-control"
+													className="form-control" 
 													value={selectedColor} 
 													onChange={(e) => setSelectedColor(e.target.value)}
 												>
@@ -114,29 +416,61 @@ const ProductDetail = () => {
 											</div>
 										</div>
 									</div>
-									
+
+									{/* Quantity */}
 									<div className="flex-w flex-r-m p-b-10">
+										<div className="size-203 flex-c-m respon6">
+											Số lượng
+										</div>
 										<div className="size-204 flex-w flex-m respon6-next">
 											<div className="wrap-num-product flex-w m-r-20 m-tb-10">
-												<div className="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+												<div 
+													className="btn-num-product-down cl8 hov-btn3 trans-04 flex-c-m"
+													onClick={() => setQuantity(Math.max(1, quantity - 1))}
+												>
 													<i className="fs-16 zmdi zmdi-minus"></i>
 												</div>
-												<input className="mtext-104 cl3 txt-center num-product" type="number" name="num-product" value={quantity} readOnly />
-												<div className="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m" onClick={() => setQuantity(quantity + 1)}>
+
+												<input 
+													className="mtext-104 cl3 txt-center num-product" 
+													type="number" 
+													name="num-product" 
+													value={quantity}
+													onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+												/>
+
+												<div 
+													className="btn-num-product-up cl8 hov-btn3 trans-04 flex-c-m"
+													onClick={() => setQuantity(quantity + 1)}
+												>
 													<i className="fs-16 zmdi zmdi-plus"></i>
 												</div>
 											</div>
-											<button className="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 js-addcart-detail" onClick={handleAddToCart}>
-												Thêm giỏ hàng
+
+											<button 
+												className="flex-c-m stext-101 cl0 size-101 bg1 bor1 hov-btn1 p-lr-15 trans-04 js-addcart-detail"
+												onClick={handleAddToCart}
+											>
+												Thêm vào giỏ hàng
 											</button>
 										</div>
 									</div>
 								</div>
 								<div className="flex-w flex-m p-l-100 p-t-40 respon7">
 									<div className="flex-m bor9 p-r-10 m-r-11">
-										<a href="#" className="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 js-addwish-detail tooltip100" data-tooltip="Add to Wishlist">
-											<i className="zmdi zmdi-favorite"></i>
-										</a>
+										<button 
+											onClick={handleAddToWishlist} 
+											className="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 js-addwish-detail tooltip100"
+											data-tooltip={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+											style={{ 
+												cursor: 'pointer',
+												background: 'transparent',
+												border: 'none',
+												padding: '0.5rem'
+											}}
+										>
+											<i className={`zmdi zmdi-favorite${isInWishlist ? '' : '-outline'}`} style={{ color: isInWishlist ? '#e65540' : '' }}></i>
+										</button>
 									</div>
 									<a href="#" className="fs-14 cl3 hov-cl1 trans-04 lh-10 p-lr-5 p-tb-2 m-r-8 tooltip100" data-tooltip="Facebook">
 										<i className="fa fa-facebook"></i>
@@ -154,11 +488,58 @@ const ProductDetail = () => {
 
 					<div className="bg6 flex-c-m flex-w size-302 m-t-73 p-tb-15">
                         <span className="stext-107 cl6 p-lr-25">
-                            Categories: {product.category}
+                            Categories: {typeof product.category === 'object' ? product.category.name : product.category || 'Uncategorized'}
                         </span>
 					</div>
 				</div>
 			</section>
+
+			{/* Zoom Image Modal */}
+			{showZoom && (
+				<div 
+					className="zoom-modal" 
+					onClick={handleCloseZoom}
+					style={{
+						position: 'fixed',
+						top: 0,
+						left: 0,
+						width: '100%',
+						height: '100%',
+						backgroundColor: 'rgba(0,0,0,0.9)',
+						zIndex: 1050,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center'
+					}}
+				>
+					<div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
+						<img 
+							src={product.img} 
+							alt={product.name} 
+							style={{
+								maxWidth: '100%',
+								maxHeight: '90vh',
+								objectFit: 'contain'
+							}}
+						/>
+						<button 
+							onClick={toggleZoom} 
+							style={{
+								position: 'absolute',
+								top: '-40px',
+								right: '-40px',
+								background: 'transparent',
+								border: 'none',
+								color: '#fff',
+								fontSize: '30px',
+								cursor: 'pointer'
+							}}
+						>
+							×
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

@@ -34,7 +34,35 @@ Paragrap        : 18px/1.6 '', Arial, sans-serif;
 Input, textarea : 14px/1.6 '', Arial, sans-serif;
 -------------------------------------------------------------------*/
 
+/* Hiệu ứng rung lắc cho biểu tượng giỏ hàng */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  10% { transform: translateX(-5px) rotate(-5deg); }
+  20% { transform: translateX(5px) rotate(5deg); }
+  30% { transform: translateX(-5px) rotate(-5deg); }
+  40% { transform: translateX(5px) rotate(5deg); }
+  50% { transform: translateX(-5px) rotate(-5deg); }
+  60% { transform: translateX(5px) rotate(5deg); }
+  70% { transform: translateX(-5px) rotate(-5deg); }
+  80% { transform: translateX(5px) rotate(5deg); }
+  90% { transform: translateX(-5px) rotate(-5deg); }
+  100% { transform: translateX(0); }
+}
 
+.shake {
+  animation: shake 0.8s ease-in-out;
+}
+
+/* Hiệu ứng nháy sáng cho badge số lượng sản phẩm */
+@keyframes flash {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.5; }
+}
+
+.icon-header-noti.shake::after {
+  animation: flash 0.8s ease-in-out;
+  background-color: #e65540 !important;
+}
 
 /*//////////////////////////////////////////////////////////////////
 [ FONT ]*/

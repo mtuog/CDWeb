@@ -1,29 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { products }from '../../data/ProductDataFE'; // Sử dụng dữ liệu từ tệp tải lên
 import Pagination from '../Pagination/Pagination';
 import ReactSlider from 'react-slider';
 import './Product.css';
 import './Slider.css';
 import { remove as removeDiacritics } from 'diacritics';
+import { getAllProducts } from '../../api/productApi';
+import { getAllCategories } from '../../api/categoryApi';
 
-// Function to extract unique categories
-const getCategories = (products) => {
-	const categories = products.map(product => product.category);
-	return ['All Products', ...new Set(categories)];
+// Function to format categories for display
+const formatCategories = (categories) => {
+	return ['All Products', ...categories.map(cat => cat.name)];
 };
 
 const Product = () => {
-	const categories = getCategories(products);
+	const [products, setProducts] = useState([]);
+	const [categories, setCategories] = useState(['All Products']);
 	const [sortOrder, setSortOrder] = useState('');
 	const [priceRange, setPriceRange] = useState([0, 10000000]);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [selectedCategory, setSelectedCategory] = useState('All Products');
 	const [searchTerm, setSearchTerm] = useState('');
 	const [isFilterVisible, setIsFilterVisible] = useState(false);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 	const itemsPerPage = 20;
 
 	const navigate = useNavigate();
+
+	// Fetch products and categories from API
+	useEffect(() => {
+		const fetchData = async () => {
+			try {
+				setLoading(true);
+				// Fetch products
+				const productsData = await getAllProducts();
+				setProducts(productsData);
+				
+				// Fetch categories from API
+				const categoriesData = await getAllCategories();
+				setCategories(formatCategories(categoriesData));
+				
+				setLoading(false);
+			} catch (error) {
+				setError("Không thể tải dữ liệu. Vui lòng thử lại sau.");
+				setLoading(false);
+				console.error("Error fetching data:", error);
+			}
+		};
+
+		fetchData();
+	}, []);
 
 	const handleSort = (order) => {
 		setSortOrder(order);
@@ -76,7 +103,7 @@ const Product = () => {
 		const [min, max] = priceRange;
 		if (product.price < min || product.price > max) return false;
 
-		if (selectedCategory !== 'All Products' && product.category !== selectedCategory) {
+		if (selectedCategory !== 'All Products' && product.category?.name !== selectedCategory) {
 			return false;
 		}
 
@@ -102,6 +129,16 @@ const Product = () => {
 
 	// Number of categories to show before grouping into dropdown
 	const visibleCategoryCount = 3;
+
+	// Show loading state
+	if (loading) {
+		return <div className="container text-center p-t-80 p-b-80">Loading products...</div>;
+	}
+
+	// Show error state
+	if (error) {
+		return <div className="container text-center p-t-80 p-b-80">{error}</div>;
+	}
 
 	return (
 		<div className="bg0 m-t-23 p-b-140">
@@ -215,7 +252,7 @@ const Product = () => {
 				{/* Product Grid */}
 				<div className="row isotope-grid">
 					{currentProducts.map((product) => (
-						<div key={product.id} className={`col-sm-6 col-md-4 col-lg-3 p-b-35 isotope-item ${product.category.toLowerCase().replace(/ /g, '-')}`}>
+						<div key={product.id} className={`col-sm-6 col-md-4 col-lg-3 p-b-35 isotope-item ${product.category?.name.toLowerCase().replace(/ /g, '-')}`}>
 							<div className="block2">
 								<div className="block2-pic hov-img0">
 									<img src={product.img} alt={product.name} />
